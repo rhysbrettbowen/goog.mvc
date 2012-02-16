@@ -1,4 +1,4 @@
-goog.provide('goog.mvc.Model');
+goog.provide('mvc.Model');
 
 goog.require('goog.array');
 goog.require('goog.dom');
@@ -17,7 +17,7 @@ goog.require('goog.object');
  * @extends goog.events.EventTarget
  * @param {Object} attr
  */
-goog.mvc.Model = function(attr) {
+mvc.Model = function(attr) {
     /**
     * @private
     * @type {Object.<string, {val: string, prev: ?string}>}
@@ -26,27 +26,23 @@ goog.mvc.Model = function(attr) {
     goog.object.forEach(attr, function(val, name) {
         this.attr_[name] = {val: val, prev: null};
     }, this);
-    this.init();
 };
 
-goog.inherits(goog.mvc.Model, goog.events.EventTarget);
-
-/* this should be overriden for initialisation */
-goog.mvc.model.prototype.init = goog.abstractMethod;
+goog.inherits(mvc.Model, goog.events.EventTarget);
 
 /**
  * @param {string} key
  * @return {string=}
  */
-goog.mvc.model.prototype.get = function(key) {
-    return goog.object.get(this.attr_, key, null);
+mvc.Model.prototype.get = function(key) {
+    return goog.object.get(this.attr_, key, {val:null}).val;
 }
 
 /**
  * @param {string} key
  * @return {boolean}
  */
-goog.mvc.model.prototype.has = function(key) {
+mvc.Model.prototype.has = function(key) {
     return goog.object.containsKey(this.attr_, key);
 };
 
@@ -56,20 +52,20 @@ goog.mvc.model.prototype.has = function(key) {
  * @param {Object|string} key object of key value pairs to set, or the key
  * @param {string=} val to use if the key is a string
  * @param {boolean=} silent true if no change event should be fired
- * @return {goog.mvc.model}
+ * @return {mvc.Model}
  */
-goog.mvc.model.prototype.set = function(key, val, silent) {
+mvc.Model.prototype.set = function(key, val, silent) {
     if(goog.isObject(key)) {
         goog.object.forEach(key, function(val, key) {
             this.set(key, val, opt);
         }, this);
     }
-    attr = goog.object.get(this.attr_, attr, null);
+    var attr = goog.object.get(this.attr_, attr, null);
     if(!attr) {
         attr = {val: val, prev: null};
         goog.object.set(this.attr_, key, attr);
     } else {
-        if attr.val == val;
+        if(attr.val == val);
             return this;
         attr.prev = attr.val;
         attr.val = val;
@@ -84,16 +80,17 @@ goog.mvc.model.prototype.set = function(key, val, silent) {
 
 /**
  * @param {string} key
- * @return {boolean} if the key existed and has been unset
+ * @return {mvc.Model}
  */
-goog.mvc.model.prototype.unset = function(key) {
-    return goog.object.remove(this.attr_, key);
+mvc.Model.prototype.unset = function(key) {
+    goog.object.remove(this.attr_, key);
+    return this;
 };
 
 /**
  * fires the change event for all attributes
  */
-goog.mvc.model.prototype.change = function() {
+mvc.Model.prototype.change = function() {
     this.dispatchEvent(goog.events.EventType.change, this.attr_.slice());
 };
 
@@ -103,12 +100,12 @@ goog.mvc.model.prototype.change = function() {
  * @param {string} key
  * @return {?string}
  */
-goog.mvc.model.prototype.prev = function(key) {
+mvc.Model.prototype.prev = function(key) {
     return goog.object.get(this.attr_, key, null);
 }
 
 // binds a change event
-goog.mvc.model.prototype.bind = function(name, el, fn) {
+mvc.Model.prototype.bind = function(name, el, fn) {
     goog.events.listen(this, function(e) {
         target = goog.object.get(e.target, name);
         if(target) {
