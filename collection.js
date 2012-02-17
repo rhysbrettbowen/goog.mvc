@@ -7,23 +7,23 @@ goog.require('goog.events.EventTarget');
  *
  * @constructor
  * @extends goog.events.EventTarget
- * @param {Array.<mvc.Model>=} models
+ * @param {?Array.<mvc.Model>} models
  */
-mvc.Colletion = function(models) {
+mvc.Collection = function(models) {
     /**
      * @private
      * @type {Array.<mvc.Model>}
      */
-    this.models_ = [models];
+    this.models_ = [];
     /**
      * @private
      * @type {?function(mvc.Model, mvc.Model):number}
      */
     this.comparator_ = null;
     
-    goog.array.forEach(models, function(model) {
+    goog.array.forEach(models || [], function(model) {
         this.add(model, true);
-    });
+    }, this);
 };
 
 goog.inherits(mvc.Collection, goog.events.EventTarget);
@@ -58,13 +58,15 @@ mvc.Collection.prototype.getLength = function() {
  */
 mvc.Collection.prototype.sort = function(silent) {
     var changeOrder = false;
-    if(this.comparator_)
+    if(this.comparator_) {
+        var comp = this.comparator_
         this.models_.sort(function(a, b) {
-            var ret = this.comparator_(a, b);
+            var ret = comp(a, b);
             if(ret < 0)
                 changeOrder = true;
             return ret;
-        });
+        }, this);
+    }
     if(!silent && changeOrder)
         this.dispatchEvent(goog.events.EventType.CHANGE);
 };
@@ -74,13 +76,13 @@ mvc.Collection.prototype.sort = function(silent) {
  * @param {boolean=} silent
  */
 mvc.Collection.prototype.add = function(model, silent) {
-    if(goog.isArray(models)) {
+    if(goog.isArray(model)) {
         goog.array.forEach(model, function(mod) {
             this.add(mod, silent);
         }, this);
         return;
     }
-    if(!goog.array.contains(model)) {
+    if(!goog.array.contains(this.models_, model)) {
         this.models_.push(model);
         goog.events.listen(model, goog.events.EventType.CHANGE, this.sort,
             false, this);

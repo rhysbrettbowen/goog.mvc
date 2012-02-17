@@ -15,7 +15,7 @@ mvc.sync.Ajax = function() {
  * @inheritDoc
  */
 mvc.sync.Ajax.prototype.create = function(model, callback) {
-    goog.net.XhrIo.send(baseUrl, goog.bind(this.onComplete), this),
+    goog.net.XhrIo.send(this.baseUrl, goog.bind(this.onComplete), this),
         "CREATE", undefined, model.getJson());
 };
 
@@ -23,7 +23,7 @@ mvc.sync.Ajax.prototype.create = function(model, callback) {
  * @inheritDoc
  */
 mvc.sync.Ajax.prototype.read = function(model, callback) {
-    goog.net.XhrIo.send(baseUrl, goog.bind(this.onComplete), this),
+    goog.net.XhrIo.send(this.baseUrl, goog.bind(this.onComplete), this),
         "GET");
 };
 
@@ -31,7 +31,7 @@ mvc.sync.Ajax.prototype.read = function(model, callback) {
  * @inheritDoc
  */
 mvc.sync.Ajax.prototype.update = function(model, callback) {
-    goog.net.XhrIo.send(baseUrl, goog.bind(this.onComplete), this),
+    goog.net.XhrIo.send(this.baseUrl, goog.bind(this.onComplete), this),
         "PUT", model.getJson());
 };
 
@@ -39,7 +39,7 @@ mvc.sync.Ajax.prototype.update = function(model, callback) {
  * @inheritDoc
  */
 mvc.sync.Ajax.prototype.delete = function(model, callback) {
-    goog.net.XhrIo.send(baseUrl, goog.bind(this.onComplete), this),
+    goog.net.XhrIo.send(this.baseUrl, goog.bind(this.onComplete), this),
         "DELETE");
 };
 
