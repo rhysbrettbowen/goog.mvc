@@ -18,8 +18,9 @@ goog.require('goog.object');
  * @constructor
  * @extends goog.events.EventTarget
  * @param {Object} attr
+ * @param {mvc.Model.Schema=} schema
  */
-mvc.Model = function(attr) {
+mvc.Model = function(attr, schema) {
     /**
      * @private
      * @type {Object.<string, ?Object>}
@@ -32,9 +33,9 @@ mvc.Model = function(attr) {
     this.prev_ = {};
     /**
      * @private
-     * @type {mvc.Model.Schema}
+     * @type {?mvc.Model.Schema}
      */
-    this.schema_;
+    this.schema_ = schema;
     goog.object.forEach(attr, function(val, name) {
         this.attr_[name] = val;
     }, this);
@@ -48,9 +49,7 @@ goog.inherits(mvc.Model, goog.events.EventTarget);
  * @return {Object.<string, Object>}
  */
 mvc.Model.prototype.toJson = function() {
-    return goog.object.map (goog.object.filter(obj, function(el) {
-        return el.val !== undefined;
-    }), function(el) {return el.val;});
+    return goog.object.clone(this.attr_);
 };
 
 /**
@@ -95,7 +94,6 @@ mvc.Model.prototype.set = function(key, val, silent) {
         if(!this.schema_ || this.schema_.validate(key, val))
             this.attr_[key] = val;
     }, this);
-    console.log(this.attr_, this.prev_);
     if(!silent) {
         this.dispatchEvent(goog.events.EventType.CHANGE);
     }
@@ -132,10 +130,6 @@ mvc.Model.prototype.prev = function(key) {
  * returns object of changed attributes and their values
  */
 mvc.Model.prototype.getChanges = function() {
-    console.log(this.attr_);
-    console.log(goog.object.filter(this.attr_, function(val, key) {
-        return val != this.prev_[key];
-    }, this));
     return goog.object.filter(this.attr_, function(val, key) {
         return val != this.prev_[key];
     }, this);
@@ -188,20 +182,24 @@ mvc.Model.prototype.fetch = function(callback, silent) {
  */
 mvc.Model.prototype.save = function() {
     
-}
+};
 
 // binds a change event
 mvc.Model.prototype.bind = function(name, el, fn) {
     goog.events.listen(this, goog.events.EventType.CHANGE, function(e) {
         var changes = e.target.getChanges();
         if(name in changes) {
-            if(goog.isFunction(fn)) {
-                fn(el, changes[name]);
-            } else {
-                goog.dom.setTextContent(el, changes[name]);
-            }
+            if(!goog.isArrayLike(el))
+                el = [el];
+            goog.array.forEach(el, function(elem) {
+                if(goog.isFunction(fn)) {
+                    fn(elem, changes[name]);
+                } else {
+                    goog.dom.setTextContent(elem, changes[name]);
+                }
+            });
         }
-    })
+    });
 };
 
 /**
@@ -218,7 +216,7 @@ mvc.Model.Schema = function() {
 };
 
 /**
- * @typdef {string|function(*):boolean}
+ * @typdef {string|function(*, mvc.Model):boolean}
  */
 mvc.Model.Schema.Rule;
 
@@ -237,15 +235,18 @@ mvc.Model.Schema.prototype.set = function(key, val) {
     goog.object.forEach(key, function(val, key) {
         if(goog.isString(val)) {
             if(val.toLowerCase() == 'number') {
-                val = goog.isNumber
+                val = function(val, mod){return goog.isNumber(val);};
             } else if(val.toLowerCase() == 'string') {
-                val = goog.isString
+                val = function(val, mod){return goog.isString(val);};
             } else if(val.toLowerCase() == 'array') {
-                val = goog.isArray
+                val = function(val, mod){return goog.isArrayLike(val);};
             }
         }
-        goog.object.extend(this.schema_, key);
+        if(val.exec) {
+            val = function(value, mod) {return !!val.exec(value);};
+        }
     }, this);
+    goog.object.extend(this.schema_, key);
 };
 
 mvc.Model.Schema.prototype.validate = function(key, val) {

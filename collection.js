@@ -6,10 +6,11 @@ goog.require('goog.events.EventTarget');
  * A collection of models
  *
  * @constructor
- * @extends goog.events.EventTarget
+ * @extends mvc.Model
  * @param {?Array.<mvc.Model>} models
  */
 mvc.Collection = function(models) {
+    goog.base(this);
     /**
      * @private
      * @type {Array.<mvc.Model>}
@@ -115,7 +116,7 @@ mvc.Collection.prototype.remove = function(model, silent) {
  * @param {string} id
  * @return {mvc.Model}
  */
-mvc.Collection.prototype.get = function(id) {
+mvc.Collection.prototype.getById = function(id) {
     return goog.array.find(this.models_, function(model) {
         return model.get('id') == id;
     });

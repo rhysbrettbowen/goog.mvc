@@ -28,8 +28,7 @@ mvc.Control.prototype.remove = function() {
 };
 
 mvc.Control.prototype.render = function(parent) {
-    
-    goog.base(this, 'render', parent, true);
+    this.decorate(parent);
     return this;
 };
 
@@ -56,7 +55,7 @@ mvc.Control.prototype.delegateEvents = function(events) {
     goog.object.forEach(events, function(val, key) {
         goog.events.listen(this.getElement(), key.replace(/\s.*/,''), function(e) {
             if(goog.dom.classes.has(e.target, key.replace(/.*\./,'')))
-                events.val(e);
+                events[key](e);
         }, false, this);
     }, this);
 };
