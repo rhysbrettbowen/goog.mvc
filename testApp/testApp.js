@@ -6,18 +6,19 @@ var model = new mvc.Model({'text': 'default'});
 
 
 var control = new mvc.Control(model);
+
 control.init = function() {
     
     var model = this.getModel();
-    
-    model.bind('text', goog.dom.getElementsByClass('new_text'),
-        function(el, val) {
-            el.value = val;});
+    model.bind('text', this.getEls('.new_text'), function(el, val) {
+            el.value = val;
+    });
             
     this.delegateEvents({
         'keyup .new_text': function(e) {
             model.set('text', e.target.value);
-    }});
+        }
+    });
 };
 
 control.render(goog.dom.getElement('note'));

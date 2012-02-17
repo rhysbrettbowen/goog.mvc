@@ -60,4 +60,21 @@ mvc.Control.prototype.delegateEvents = function(events) {
     }, this);
 };
 
+/**
+ * pass in a string like "#elementId", ".className" or "tagName[ .className]"
+ * to get array of elements with the id, class or tag and class name
+ *
+ * @param {string} selector
+ * @return {?goog.array.ArrayLike}
+ */
+mvc.Control.prototype.getEls = function(selector) {
+    if(selector.charAt(0) == '.') {
+        return goog.dom.getElementsByClass(selector.substring(1), /** @type {Element} */(this.getElement())) || [];
+    }
+    if(selector.charAt(0) == '#') {
+        return [goog.dom.getElement(selector)];
+    }
+    return goog.dom.getElementsByTagNameAndClass(selector.replace(/\s.*/,''), selector.replace(/.*\./,'')||null, /** @type {Element} */(this.getElement()));
+};
+
 
