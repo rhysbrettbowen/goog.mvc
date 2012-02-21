@@ -1,6 +1,6 @@
-// v0.1
+// v0.2
 goog.provide('mvc.Model');
-goog.provide('mvc.Model.Schema');
+goog.provide('mvc.model.Schema');
 
 
 goog.require('goog.array');
@@ -37,6 +37,9 @@ mvc.Model = function(attr, schema) {
      * @type {?mvc.Model.Schema}
      */
     this.schema_ = schema;
+    
+    this.cid_ = goog.getUid();
+    
     goog.object.forEach(attr, function(val, name) {
         this.attr_[name] = val;
     }, this);
@@ -59,6 +62,13 @@ mvc.Model.prototype.toJson = function() {
  */
 mvc.Model.prototype.get = function(key) {
     return goog.object.get(this.attr_, key, null);
+}
+
+/**
+ * @return {boolean}
+ */
+mvc.Model.prototype.isNew = function() {
+    return !!this.get('id');
 }
 
 /**
@@ -185,7 +195,11 @@ mvc.Model.prototype.fetch = function(callback, silent) {
  * pushes the object to the sync
  */
 mvc.Model.prototype.save = function() {
-    
+    if(this.sync_)
+        if(this.isNew())
+            this.sync_.create(this);
+        else
+            this.sync_.update(this);
 };
 
 // binds a change event
@@ -222,18 +236,21 @@ mvc.Model.prototype.bind = function(name, el, fn) {
  *
  * @constructor
  */
-mvc.Model.Schema = function() {
+mvc.model.Schema = function(rules) {
     /**
      * @private
      * @type {Object.<string, function(*):boolean>}
      */
     this.schema_ = {};
+    
+    if(rules)
+        this.set(rules);
 };
 
 /**
  * @typdef {string|function(*, mvc.Model):boolean}
  */
-mvc.Model.Schema.Rule;
+mvc.model.Schema.Rule;
 
 /**
  * set rule(s) in the schema
@@ -241,13 +258,13 @@ mvc.Model.Schema.Rule;
  * @param {string | Object.<string, mvc.Model.Schema.Rule>} key
  * @param {mvc.Model.Schema.Rule=} val
  */
-mvc.Model.Schema.prototype.set = function(key, val) {
+mvc.model.Schema.prototype.set = function(key, val) {
     if(goog.isString(key)) {
         var temp = {};
         temp[key] = val;
         key = temp;
     }
-    goog.object.forEach(key, function(val, key) {
+    goog.object.extend(this.schema_, goog.object.map(key, function(val, key) {
         if(goog.isString(val)) {
             if(val.toLowerCase() == 'number') {
                 val = function(val, mod){return goog.isNumber(val);};
@@ -258,14 +275,14 @@ mvc.Model.Schema.prototype.set = function(key, val) {
             }
         }
         if(val.exec) {
-            val = function(value, mod) {return !!val.exec(value);};
+            val = goog.bind(function(regex, value, mod) {return !!regex.exec(value);}, this, val);
         }
-    }, this);
-    goog.object.extend(this.schema_, key);
+        return val;
+    }, this));
 };
 
-mvc.Model.Schema.prototype.validate = function(key, val) {
+mvc.model.Schema.prototype.validate = function(key, val) {
     if(key in this.schema_)
-        return this.schema_(key, val);
+        return this.schema_[key](val);
     return true;
 };

@@ -1,10 +1,10 @@
 // v0.1
-goog.provide('mvc.sync');
+goog.provide('mvc.ync');
 
 /**
  * @enum {number}
  */
-mvc.sync.Status = {
+mvc.Sync.Status = {
     // Successful
     OK: 200,
     CREATED: 201,
@@ -32,7 +32,7 @@ mvc.sync.Status = {
  *
  * @interface
  */
-mvc.sync = function() {};
+mvc.Sync = function() {};
 
 /**
  * take in the model to push to server (use .toJson()) and call callback when done
@@ -41,7 +41,7 @@ mvc.sync = function() {};
  * @param {mvc.Model} model
  * @param {function(Object, number)} callback
  */
-mvc.sync.prototype.create = function(model, callback) {};
+mvc.Sync.prototype.create = function(model, callback) {};
 
 /**
  * take in the model to push to server (use .toJson()) and call callback when done
@@ -50,7 +50,7 @@ mvc.sync.prototype.create = function(model, callback) {};
  * @param {mvc.Model} model
  * @param {function(Object, number)} callback
  */
-mvc.sync.prototype.read = function(model, callback) {};
+mvc.Sync.prototype.read = function(model, callback) {};
 
 /**
  * take in the model to push to server (use .toJson()) and call callback when done
@@ -59,7 +59,7 @@ mvc.sync.prototype.read = function(model, callback) {};
  * @param {mvc.Model} model
  * @param {function(Object, number)} callback
  */
-mvc.sync.prototype.update = function(model, callback) {};
+mvc.Sync.prototype.update = function(model, callback) {};
 
 /**
  * take in the model to push to server (use .toJson()) and call callback when done
@@ -68,4 +68,4 @@ mvc.sync.prototype.update = function(model, callback) {};
  * @param {mvc.Model} model
  * @param {function(number)} callback
  */
-mvc.sync.prototype.delete = function(model, callback) {};
+mvc.Sync.prototype.delete = function(model, callback) {};

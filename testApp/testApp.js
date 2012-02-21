@@ -1,9 +1,9 @@
 
 document.write('<div id="note"><div id="text"></div><div id="new_input"><textarea class="new_text"></textarea><textarea class="new_text"></textarea></div></div>');
 
-var model = new mvc.Model({'text': 'default'});
+var schema = new mvc.model.Schema({'text': /^[a-z]*$/i});
 
-
+var model = new mvc.Model({'text': 'default'}, schema);
 
 var control = new mvc.Control(model);
 

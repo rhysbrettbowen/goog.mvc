@@ -1,4 +1,4 @@
-// v0.1
+// v0.2
 goog.provide('mvc.Collection');
 
 goog.require('mvc.Model');
@@ -10,8 +10,9 @@ goog.require('goog.events.EventTarget');
  * @constructor
  * @extends mvc.Model
  * @param {?Array.<mvc.Model>} models
+ * @param {mvc.Model} modelType is the base type of model to use when creating a new model in the collection
  */
-mvc.Collection = function(models) {
+mvc.Collection = function(models, modelType) {
     goog.base(this);
     /**
      * @private
@@ -23,6 +24,8 @@ mvc.Collection = function(models) {
      * @type {?function(mvc.Model, mvc.Model):number}
      */
     this.comparator_ = null;
+    
+    this.modelType_ = modelType;
     
     goog.array.forEach(models || [], function(model) {
         this.add(model, true);
@@ -76,23 +79,30 @@ mvc.Collection.prototype.sort = function(silent) {
 
 /**
  * @param {mvc.Model|Array.<mvc.Model>} model
+ * @param {number=} ind
  * @param {boolean=} silent
  */
-mvc.Collection.prototype.add = function(model, silent) {
+mvc.Collection.prototype.add = function(model, ind, silent) {
     if(goog.isArray(model)) {
-        goog.array.forEach(model, function(mod) {
-            this.add(mod, silent);
+        goog.array.forEach(model.reverse(), function(mod) {
+            this.add(mod, ind, silent);
         }, this);
         return;
     }
     if(!goog.array.contains(this.models_, model)) {
-        this.models_.push(model);
+        goog.array.insertAt(this.models_, model, (ind || this.models_.length));
         goog.events.listen(model, goog.events.EventType.CHANGE, this.sort,
             false, this);
         this.sort(true);
         if(!silent)
             this.dispatchEvent(goog.events.EventType.CHANGE, model);
     }
+};
+
+mvc.Collection.prototype.newModel = function(ind, silent) {
+    var model = new this.modelType();
+    this.add(model, ind, silent);
+    return model;
 };
 
 /**

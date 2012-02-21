@@ -64,4 +64,10 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 
 ### changelog ###
 
-v0.1 - initial documentation and versioning
+v0.2    - fix model.Schema
+        - mvc.Collection now takes optional index for add()
+        - mvc.Collection.newModel adds a new model to the collection
+        - mvc.sync.Ajax first implementation
+        - mvc.sync.Local first implementation
+
+v0.1    - initial documentation and versioning
