@@ -1,4 +1,4 @@
-// v0.2
+// v0.3
 goog.provide('mvc.sync.Local');
 
 goog.require('goog.storage.Storage');
@@ -8,7 +8,7 @@ goog.require('goog.storage.mechanism.HTML5LocalStorage');
  * @implements {mvc.sync}
  */
 mvc.sync.Local = function() {
-    this.store_ = new goog.storage.Storage(goog.storage.mechanism.HTML5LocalStorage);
+    this.store_ = new goog.storage.Storage(new goog.storage.mechanism.HTML5LocalStorage());
 };
 
 mvc.sync.Local.prototype.getUID = function() {
@@ -18,8 +18,7 @@ mvc.sync.Local.prototype.getUID = function() {
 
 mvc.sync.Local.prototype.create = function(model, callback) {
     var id = this.getUID();
-    model.set('id') = id;
-    this.store_.update(model);
+    model.set('id', id);
 };
 
 mvc.sync.Local.prototype.read = function(model, callback) {

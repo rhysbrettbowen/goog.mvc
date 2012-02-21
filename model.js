@@ -1,4 +1,4 @@
-// v0.2
+// v0.3
 goog.provide('mvc.Model');
 goog.provide('mvc.model.Schema');
 
@@ -21,7 +21,7 @@ goog.require('goog.object');
  * @param {Object} attr
  * @param {mvc.Model.Schema=} schema
  */
-mvc.Model = function(attr, schema) {
+mvc.Model = function(attr, schema, sync) {
     /**
      * @private
      * @type {Object.<string, ?Object>}
@@ -38,11 +38,15 @@ mvc.Model = function(attr, schema) {
      */
     this.schema_ = schema;
     
-    this.cid_ = goog.getUid();
+    this.sync_ = sync;
+    
+    this.cid_ = goog.getUid(this);
     
     goog.object.forEach(attr, function(val, name) {
         this.attr_[name] = val;
     }, this);
+    
+    this.dispatchEvent(goog.events.EventType.LOAD);
 };
 
 goog.inherits(mvc.Model, goog.events.EventTarget);
@@ -56,6 +60,10 @@ mvc.Model.prototype.toJson = function() {
     return goog.object.clone(this.attr_);
 };
 
+mvc.Model.prototype.setSync = function(sync) {
+    this.sync_ = sync;
+}
+
 /**
  * @param {string} key
  * @return {Object=}
@@ -68,7 +76,7 @@ mvc.Model.prototype.get = function(key) {
  * @return {boolean}
  */
 mvc.Model.prototype.isNew = function() {
-    return !!this.get('id');
+    return !this.get('id');
 }
 
 /**
@@ -127,7 +135,7 @@ mvc.Model.prototype.unset = function(key, silent) {
  * fires the change event for the model
  */
 mvc.Model.prototype.change = function() {
-    this.dispatchEvent(goog.events.EventType.change);
+    this.dispatchEvent(goog.events.EventType.CHANGE);
 };
 
 /**
@@ -166,6 +174,12 @@ mvc.Model.prototype.revert = function() {
     return this;
 };
 
+mvc.Model.prototype.dispose = function() {
+    this.sync_.delete(this);
+    this.dispatchEvent(goog.events.EventType.UNLOAD);
+    this.disposeInternal();
+}
+
 /**
  * reads an object fomr an external source using sync
  *
@@ -188,7 +202,7 @@ mvc.Model.prototype.fetch = function(callback, silent) {
             callback(data, status, this);
         }
     }, this);
-    this.sync.read(this);
+    this.sync_.read(this);
 };
 
 /**

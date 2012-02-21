@@ -64,6 +64,11 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 
 ### changelog ###
 
+#### v0.3 ####
+
+- add dispose() to mvc.Model
+- fix mvc.sync.Local
+
 #### v0.2 ####
 
 - fix model.Schema
