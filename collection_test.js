@@ -34,3 +34,9 @@ var testSortedCollection = function() {
     assertEquals('second object should be mock 3', test.at(1), model3);
     assertEquals('third object should be mock 1', test.at(2), model1);
 };
+
+var testAsModel = function() {
+    var test = new mvc.Collection();
+    test.set('a', 1);
+    assertEquals('should have attribute a as 1', test.get('a'), 1);
+}

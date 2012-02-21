@@ -1,5 +1,7 @@
+// v0.1
 goog.provide('mvc.Collection');
 
+goog.require('mvc.Model');
 goog.require('goog.events.EventTarget');
 
 /**
@@ -27,7 +29,7 @@ mvc.Collection = function(models) {
     }, this);
 };
 
-goog.inherits(mvc.Collection, goog.events.EventTarget);
+goog.inherits(mvc.Collection, mvc.Model);
 
 /**
  * @return {Array}

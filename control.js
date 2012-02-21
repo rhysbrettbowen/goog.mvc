@@ -1,3 +1,4 @@
+// v0.1
 goog.provide('mvc.Control');
 
 goog.require('goog.dom');

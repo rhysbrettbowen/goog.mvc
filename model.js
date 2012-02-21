@@ -1,3 +1,4 @@
+// v0.1
 goog.provide('mvc.Model');
 goog.provide('mvc.Model.Schema');
 
@@ -84,15 +85,18 @@ mvc.Model.prototype.has = function(key) {
  * @return {mvc.Model}
  */
 mvc.Model.prototype.set = function(key, val, silent) {
-    this.prev_ = goog.object.clone(this.attr_);
     if(goog.isString(key)) {
         var temp = {};
         temp[key] = val;
         key = temp;
     }
+    if(!silent) {
+        this.prev_ = goog.object.clone(this.attr_);
+    }
     goog.object.forEach(key, function(val, key) {
-        if(!this.schema_ || this.schema_.validate(key, val))
+        if(!this.schema_ || this.schema_.validate(key, val)) {
             this.attr_[key] = val;
+        }
     }, this);
     if(!silent) {
         this.dispatchEvent(goog.events.EventType.CHANGE);
@@ -185,21 +189,32 @@ mvc.Model.prototype.save = function() {
 };
 
 // binds a change event
+/**
+ * @param {string} name
+ * @param {Element|Node|Function|*} el
+ * @param {Function|*} fn
+ */
 mvc.Model.prototype.bind = function(name, el, fn) {
     goog.events.listen(this, goog.events.EventType.CHANGE, function(e) {
         var changes = e.target.getChanges();
-        if(name in changes) {
+        if(name in changes || !goog.isDefAndNotNull(name)) {
+            if(goog.isFunction(el)) {
+                goog.bind(el, fn)(changes[name], this);
+                return;
+            }
             if(!goog.isArrayLike(el))
                 el = [el];
             goog.array.forEach(el, function(elem) {
                 if(goog.isFunction(fn)) {
                     fn(elem, changes[name]);
-                } else {
+                } else if (el.nodeType){
                     goog.dom.setTextContent(elem, changes[name]);
+                } else {
+                    el = changes[name];
                 }
             });
         }
-    });
+    }, this);
 };
 
 /**
