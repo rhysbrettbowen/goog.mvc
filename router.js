@@ -1,16 +1,17 @@
-// v0.1
+// v0.4
 goog.provide('mvc.Router');
 
 goog.require('goog.events');
-goog.require('goog.history');
+goog.require('goog.History');
 
 /**
  * @constructor
  */
 mvc.Router = function() {
     this.history_ = new goog.History();
-    goog.events(this.history_, goog.history.EventType.NAVIGATE,
+    goog.events.listen(this.history_, goog.history.EventType.NAVIGATE,
         this.onChange_, false, this);
+    this.history_.setEnabled(true);
     this.routes_ = [];
 };
 
@@ -32,13 +33,13 @@ mvc.Router.prototype.navigate = function(fragment) {
  */
 mvc.Router.prototype.route = function(route, fn) {
     if(goog.isString(route))
-        var routeRE = new RegExp('^' + goog.string.regExpEscape(route).replace(/:\w+/g, '(\w+)').replace(/\*\w+/g, '(.*?)') + '$');
+        var route = new RegExp('^' + goog.string.regExpEscape(route).replace(/:\w+/g, '(\w+)').replace(/\*\w+/g, '(.*?)') + '$');
     this.routes_.push({route: route, callback: fn});
 }
 
-mvc.Router.prototype.onChange_ = function() {
+mvc.Router.prototype.onChange_ = function(e) {
     var fragment = this.history_.getToken();
-    goog.array.forEach(this.routes_, function(route) {
+    goog.array.forEach(this.routes_ || [], function(route) {
         var args = route.route.exec(fragment);
         if(!args)
             return;

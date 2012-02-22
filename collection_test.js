@@ -35,6 +35,15 @@ var testSortedCollection = function() {
     assertEquals('third object should be mock 1', test.at(2), model1);
 };
 
+var testNewSortedCollection = function() {
+    var sort = function(a, b) {return a.get('sort')-b.get('sort');};
+    var test = new mvc.Collection([model1,model2,model3]);
+    test.setComparator(sort);
+    assertEquals('first object should be mock 2', test.at(0), model2);
+    assertEquals('second object should be mock 3', test.at(1), model3);
+    assertEquals('third object should be mock 1', test.at(2), model1);
+};
+
 var testAsModel = function() {
     var test = new mvc.Collection();
     test.set('a', 1);

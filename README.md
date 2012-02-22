@@ -64,6 +64,14 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 
 ### changelog ###
 
+#### v0.4 ####
+
+- added pluck in to mvc.Collection
+- fix sorting on models passed in at creation
+- added in all_tests.html
+- fixed mvc.Router
+- tests for mvc.Router_
+
 #### v0.3 ####
 
 - add dispose() to mvc.Model
