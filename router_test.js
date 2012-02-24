@@ -1,6 +1,7 @@
 goog.require('mvc.Router');
 
-
+goog.require('goog.testing.ContinuationTestCase');
+goog.require('goog.testing.jsunit');
 
 var router;
 
@@ -24,3 +25,8 @@ var testRoute = function() {
             assert(reached);
         });
 };
+
+
+testCase = new goog.testing.ContinuationTestCase();
+testCase.autoDiscoverTests();
+G_testRunner.initialize(testCase);
