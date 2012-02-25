@@ -70,7 +70,7 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 - fix sorting on models passed in at creation
 - added in all_tests.html
 - fixed mvc.Router
-- tests for mvc.Router_
+- tests for mvc.Router
 
 #### v0.3 ####
 
