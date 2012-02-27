@@ -222,8 +222,20 @@ mvc.Model.prototype.save = function() {
             this.sync_.update(this);
 };
 
-// binds a change event
+mvc.Model.prototype.getBinder = function(key) {
+    return goog.bind(this.set, this, key);
+}
+
 /**
+ * Allows easy binding of a model's attributre to an element or a function.
+ * bind('name', Element(s)) would change the text content to the model's name
+ * bind('name', Element(s), function(El, attr)) runs a function with the element
+ * and the attributes value
+ * bind('name', function(value), handler) allows you to run a function and
+ * optionally bind it to the handler
+ * if no name is passed (null or undefined) then the operation will be run on
+ * any change to the model and pass in the model
+ *
  * @param {string} name
  * @param {Element|Node|Function|*} el
  * @param {Function|*} fn
@@ -240,11 +252,11 @@ mvc.Model.prototype.bind = function(name, el, fn) {
                 el = [el];
             goog.array.forEach(el, function(elem) {
                 if(goog.isFunction(fn)) {
-                    fn(elem, changes[name]);
+                    fn(elem, changes[name] || this);
                 } else if (el.nodeType){
-                    goog.dom.setTextContent(elem, changes[name]);
+                    goog.dom.setTextContent(elem, changes[name] || this);
                 } else {
-                    el = changes[name];
+                    el = changes[name] || this;
                 }
             });
         }

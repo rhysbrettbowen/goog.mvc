@@ -5,7 +5,7 @@ document.write('<div id="note"><div><input type="text" id="idinput" class="idinp
 var sync = new mvc.sync.Local();
 
 // text must have newlines beginning with a hash
-var schema = new mvc.model.Schema({'text': /\n#/});
+var schema = new mvc.model.Schema({'text': /copyright/});
 
 // create a new model and push to localStorage
 var model = new mvc.Model({'text': 'default'}, schema, sync);
