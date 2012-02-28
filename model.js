@@ -35,6 +35,11 @@ mvc.Model = function(attr, schema, sync) {
     this.attr_ = {};
     /**
      * @private
+     * @type {Object.<string, ?Function>}
+     */
+    this.formats_ = {};
+    /**
+     * @private
      * @type {Object.<string, ?Object>}
      */
     this.prev_ = {};
@@ -75,6 +80,8 @@ mvc.Model.prototype.setSync = function(sync) {
  * @return {Object=}
  */
 mvc.Model.prototype.get = function(key) {
+    if(this.formats_[key])
+        return this.formats_[key]();
     return goog.object.get(this.attr_, key, null);
 }
 
@@ -127,6 +134,44 @@ mvc.Model.prototype.set = function(key, val, silent) {
     }
     return this;
 };
+
+/**
+ * Can be used to change the output of an attribute, or create alias or
+ * meta-attributes.
+ * change get format like this:
+ * model.format('date', function(date) {
+ *  return date.getMonth()+"/"+date.getYear();});
+ * setup a new alias
+ * model.format('last_name', 'surname');
+ * setup a meta-attr
+ * model.format('date', ['day', 'month', 'year'], function(day, month, year) {
+ *  return day+"/"+month+"/"+year;});
+ *
+ * @param {string} attr the new attribute name or attribute to set a format for
+ * @param {Function|string|Array.<string>} formatter the formatting function,
+ *  the attribute to alias or an array of attributes to use. The function will
+ *  be passed the value and be bound to the model
+ * @param {Function=} fn function to put together the meta-attribute
+ * @return {mvc.Model}
+ */
+mvc.Model.prototype.format = function(attr, formatter, fn) {
+    if(goog.isString(formatter)) {
+        this.formats_[attr] = goog.bind(function() {
+            return this.attr_[formatter];
+        }, this);
+    } else if (goog.isFunction(formatter)) {
+        this.formats_[attr] = goog.bind(function() {
+            return formatter(this.attr_[attr], this);
+        }, this);
+    } else if (goog.isArrayLike(formatter)) {
+        this.formats_[attr] = goog.bind(function() {
+            return fn.apply(this, goog.array.map(formatter, function(val) {
+                return this.attr_[val];
+            }, this));
+        }, this);
+    }
+    return this;
+}
 
 /**
  * @param {string} key
@@ -236,13 +281,15 @@ mvc.Model.prototype.getBinder = function(key) {
  * if no name is passed (null or undefined) then the operation will be run on
  * any change to the model and pass in the model
  *
- * @param {string} name
+ * @param {string|Array.<string>} name
  * @param {Element|Node|Function|*} el
  * @param {Function|*} fn
  */
 mvc.Model.prototype.bind = function(name, el, fn) {
     goog.events.listen(this, goog.events.EventType.CHANGE, function(e) {
         var changes = e.target.getChanges();
+        if(goog.isString(name))
+            name = [name];
         if(name in changes || !goog.isDefAndNotNull(name)) {
             if(goog.isFunction(el)) {
                 goog.bind(el, fn)(changes[name], this);

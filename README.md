@@ -35,6 +35,8 @@ When creating a new model instance, the constructor takes two optional arguments
 
 You should always use the get() and set() functions when dealing with the model's data. These functions take care of saving old data and publishing change events
 
+There is also a format function that allows you to format the data when you get it, or even create new attributes using existing ones
+
 ## mvc.model.Schema ##
 
 A schema can be set for a model. The schema takes in an object or map of keys and functions. The functions take in a value and return true or false. When a schema is passed in to a model, the model will use this to validate any values trying to be set, and won't add in data if a function returns false. You can also pass in the following strings to check for the type of input: "number", "string", "array"
@@ -63,6 +65,10 @@ This is an interface that should have a custom implementation. Two simple implem
 mvc.Router uses goog.History and hash tokens to hold and manage the state of the application. You can define a route with a regular expression that will fire custom events when a certain route comes on the URL.
 
 ### changelog ###
+
+#### v0.5 ####
+
+- add in format function on model
 
 #### v0.4 ####
 
