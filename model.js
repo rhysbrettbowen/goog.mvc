@@ -1,4 +1,4 @@
-//     goog.mvc 0.4
+//     goog.mvc 0.5
 
 //     (c) 2012 Rhys Brett-Bowen, Catch.com
 //     goog.mvc may be freely distributed under the MIT license.
@@ -10,7 +10,6 @@ goog.provide('mvc.model.Schema');
 
 
 goog.require('goog.array');
-goog.require('goog.dom');
 goog.require('goog.events');
 goog.require('goog.events.EventTarget');
 goog.require('goog.object');
@@ -300,10 +299,8 @@ mvc.Model.prototype.bind = function(name, el, fn) {
             goog.array.forEach(el, function(elem) {
                 if(goog.isFunction(fn)) {
                     fn(elem, changes[name] || this);
-                } else if (el.nodeType){
-                    goog.dom.setTextContent(elem, changes[name] || this);
                 } else {
-                    el = changes[name] || this;
+                    elem = changes[name] || this;
                 }
             });
         }

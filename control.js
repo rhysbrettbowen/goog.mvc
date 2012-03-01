@@ -22,6 +22,17 @@ mvc.Control = function(model) {
     this.setModel(model);
 };
 
+/**
+ * Functions that can be passed to the mvc.Model.bind
+ *
+ * @enum {Function}
+ */
+mvc.Control.Fn = {
+    TEXT: goog.dom.setTextContent,
+    VAL: function(el, val) {el.value = val;},
+    CLASS: goog.dom.classes.add
+};
+
 goog.inherits(mvc.Control, goog.ui.Component);
 
 // backbone.js views are just like goog.ui.component, this is more of an interface
