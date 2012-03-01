@@ -357,6 +357,19 @@ mvc.model.Schema.prototype.set = function(key, val) {
     }, this));
 };
 
+mvc.model.Schema.Test = function(obj) {
+    return function(val) {
+        if(val.constructor == obj)
+            return true;
+        while(val.superClass_) {
+            val = val.superClass_.constructor;
+            if(val == obj)
+                return true;
+        }
+        return false;
+    };
+}
+
 mvc.model.Schema.prototype.validate = function(key, val) {
     if(key in this.schema_)
         return this.schema_[key](val);

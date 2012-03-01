@@ -22,9 +22,7 @@ control.init = function() {
     var model = this.getModel();
     
     // bind model changes on text to update the text fields
-    model.bind('text', this.getEls('.new_text'), function(el, val) {
-            el.value = val;
-    });
+    model.bind('text', this.getEls('.new_text'), mvc.Control.Fn.VAL);
             
     this.delegateEvents({
         // when text is modified save to model then save to data storage

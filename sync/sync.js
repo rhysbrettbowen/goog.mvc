@@ -1,5 +1,5 @@
 // v0.1
-goog.provide('mvc.ync');
+goog.provide('mvc.Sync');
 
 /**
  * @enum {number}

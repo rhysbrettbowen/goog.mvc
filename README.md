@@ -69,6 +69,9 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 #### v0.5 ####
 
 - add in format function on model
+- removed dependency on goog.dom from mvc.Model
+- put in convenience functions for binding elements with model attributes
+- put in convenience function for schema test for type of object
 
 #### v0.4 ####
 
