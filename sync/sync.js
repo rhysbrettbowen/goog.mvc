@@ -1,6 +1,15 @@
 // v0.1
 goog.provide('mvc.Sync');
 
+
+
+/**
+ * Sync object used to communicate between model and source
+ *
+ * @interface
+ */
+mvc.Sync = function() {};
+
 /**
  * @enum {number}
  */
@@ -26,13 +35,6 @@ mvc.Sync.Status = {
     BAD_GATEWAY: 502,
     GATEWAY_TIMEOUT: 504
 }
-
-/**
- * Sync object used to communicate between model and source
- *
- * @interface
- */
-mvc.Sync = function() {};
 
 /**
  * take in the model to push to server (use .toJson()) and call callback when done
@@ -68,4 +70,4 @@ mvc.Sync.prototype.update = function(model, callback) {};
  * @param {mvc.Model} model
  * @param {function(number)} callback
  */
-mvc.Sync.prototype.delete = function(model, callback) {};
+mvc.Sync.prototype.del = function(model, callback) {};

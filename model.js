@@ -23,8 +23,9 @@ goog.require('goog.object');
  *
  * @constructor
  * @extends goog.events.EventTarget
- * @param {Object} attr
- * @param {mvc.Model.Schema=} schema
+ * @param {Object=} attr
+ * @param {mvc.model.Schema=} schema
+ * @param {mvc.Sync=} sync
  */
 mvc.Model = function(attr, schema, sync) {
     /**
@@ -44,15 +45,15 @@ mvc.Model = function(attr, schema, sync) {
     this.prev_ = {};
     /**
      * @private
-     * @type {?mvc.Model.Schema}
+     * @type {?mvc.model.Schema}
      */
-    this.schema_ = schema;
+    this.schema_ = schema || null;
     
     this.sync_ = sync;
     
     this.cid_ = goog.getUid(this);
     
-    goog.object.forEach(attr, function(val, name) {
+    goog.object.forEach((attr || []), function(val, name) {
         this.attr_[name] = val;
     }, this);
     
@@ -76,7 +77,7 @@ mvc.Model.prototype.setSync = function(sync) {
 
 /**
  * @param {string} key
- * @return {Object=}
+ * @return {*}
  */
 mvc.Model.prototype.get = function(key) {
     if(this.formats_[key])
@@ -92,7 +93,7 @@ mvc.Model.prototype.isNew = function() {
 }
 
 /**
- * @param {mvc.Model.Schema}
+ * @param {mvc.model.Schema} schema
  */
 mvc.Model.prototype.setSchema = function(schema) {
     this.schema_ = schema;
@@ -160,11 +161,11 @@ mvc.Model.prototype.format = function(attr, formatter, fn) {
         }, this);
     } else if (goog.isFunction(formatter)) {
         this.formats_[attr] = goog.bind(function() {
-            return formatter(this.attr_[attr], this);
+            return /** @type {Function} */(formatter)(this.attr_[attr], this);
         }, this);
     } else if (goog.isArrayLike(formatter)) {
         this.formats_[attr] = goog.bind(function() {
-            return fn.apply(this, goog.array.map(formatter, function(val) {
+            return fn.apply(this, goog.array.map(/** @type {Array} */(formatter), function(val) {
                 return this.attr_[val];
             }, this));
         }, this);
@@ -192,7 +193,7 @@ mvc.Model.prototype.change = function() {
  * returns the previous value of the attribute
  *
  * @param {string} key
- * @return {?Object}
+ * @return {*}
  */
 mvc.Model.prototype.prev = function(key) {
     return goog.object.get(this.prev_, key, null);
@@ -225,7 +226,7 @@ mvc.Model.prototype.revert = function() {
 };
 
 mvc.Model.prototype.dispose = function() {
-    this.sync_.delete(this);
+    this.sync_.del(this);
     this.dispatchEvent(goog.events.EventType.UNLOAD);
     this.disposeInternal();
 }
@@ -291,20 +292,20 @@ mvc.Model.prototype.bind = function(name, el, fn) {
             name = [name];
         if(name in changes || !goog.isDefAndNotNull(name)) {
             if(goog.isFunction(el)) {
-                goog.bind(el, fn)(changes[name], this);
+                goog.bind(el, /** @type {Function} */(fn))(changes[name], this);
                 return;
             }
             if(!goog.isArrayLike(el))
                 el = [el];
-            goog.array.forEach(el, function(elem) {
+            goog.array.forEach(/** @type {Array} */(el), function(elem) {
                 if(goog.isFunction(fn)) {
                     fn(elem, changes[name] || this);
                 } else {
                     elem = changes[name] || this;
                 }
-            });
+            }, this);
         }
-    }, this);
+    }, false, this);
 };
 
 /**
@@ -324,15 +325,15 @@ mvc.model.Schema = function(rules) {
 };
 
 /**
- * @typdef {string|function(*, mvc.Model):boolean}
+ * @typedef {string|function(*, mvc.Model):boolean}
  */
 mvc.model.Schema.Rule;
 
 /**
  * set rule(s) in the schema
  *
- * @param {string | Object.<string, mvc.Model.Schema.Rule>} key
- * @param {mvc.Model.Schema.Rule=} val
+ * @param {string | Object.<string, mvc.model.Schema.Rule>} key
+ * @param {mvc.model.Schema.Rule=} val
  */
 mvc.model.Schema.prototype.set = function(key, val) {
     if(goog.isString(key)) {

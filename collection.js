@@ -8,6 +8,7 @@
 goog.provide('mvc.Collection');
 
 goog.require('mvc.Model');
+goog.require('goog.events.Event');
 goog.require('goog.events.EventTarget');
 
 /**
@@ -16,10 +17,12 @@ goog.require('goog.events.EventTarget');
  * @constructor
  * @extends mvc.Model
  * @param {?Array.<mvc.Model>} models
- * @param {mvc.Model} modelType is the base type of model to use when creating a new model in the collection
+ * @param {function(new:mvc.Model)=} modelType is the base type of model to use when creating a new model in the collection
+ * @param {mvc.Sync=} sync
  */
-mvc.Collection = function(models, modelType) {
+mvc.Collection = function(models, modelType, sync) {
     goog.base(this);
+    this.sync_ = sync;
     /**
      * @private
      * @type {Array.<mvc.Model>}
@@ -31,14 +34,15 @@ mvc.Collection = function(models, modelType) {
      */
     this.comparator_ = null;
     
-    
+    /**
+     * @private
+     */
     this.modelType_ = modelType;
     
     goog.array.forEach(models || [], function(model) {
         this.add(model, undefined, true);
     }, this);
 };
-
 goog.inherits(mvc.Collection, mvc.Model);
 
 /**
@@ -60,7 +64,7 @@ mvc.Collection.prototype.pluck = function(key) {
             return model.get(key);
         return goog.array.reduce(key, function(map, attr) {
             var val = model.get(attr);
-            if(goog.isDefAndNotNull(val));
+            if(goog.isDefAndNotNull(val))
                 goog.object.set(map, attr, val);
             return map;
         }, {});
@@ -102,7 +106,7 @@ mvc.Collection.prototype.sort = function(silent) {
             if(ret < 0)
                 changeOrder = true;
             return ret;
-        }, this);
+        });
     }
     if(!silent && changeOrder)
         this.dispatchEvent(goog.events.EventType.CHANGE);
@@ -131,14 +135,19 @@ mvc.Collection.prototype.add = function(model, ind, silent) {
             }, false, this);
         this.sort(true);
         if(!silent)
-            this.dispatchEvent(goog.events.EventType.CHANGE, model);
+            this.dispatchEvent(new goog.events.Event(goog.events.EventType.CHANGE, model));
     }
     this.length = this.models_.length;
 };
 
-mvc.Collection.prototype.newModel = function(ind, silent) {
+/**
+ * @param {Object=} attr
+ * @param {boolean=} silent
+ */
+mvc.Collection.prototype.newModel = function(attr, silent) {
     var model = new this.modelType_();
-    this.add(model, ind, silent);
+    model.set(attr || null);
+    this.add(model, 0, silent);
     return model;
 };
 
@@ -147,7 +156,7 @@ mvc.Collection.prototype.newModel = function(ind, silent) {
  * @param {boolean=} silent
  */
 mvc.Collection.prototype.remove = function(model, silent) {
-    if(goog.isArray(models)) {
+    if(goog.isArray(model)) {
         goog.array.forEach(model, function(mod) {
             this.remove(mod, silent);
         }, this);
@@ -165,12 +174,12 @@ mvc.Collection.prototype.remove = function(model, silent) {
  * get a model by it's ID
  *
  * @param {string} id
- * @return {mvc.Model}
+ * @return {mvc.Model|null}
  */
 mvc.Collection.prototype.getById = function(id) {
-    return goog.array.find(this.models_, function(model) {
+    return /** @type {mvc.Model} */(goog.array.find(this.models_, function(model) {
         return model.get('id') == id;
-    });
+    }));
 }
 
 /**
@@ -182,3 +191,7 @@ mvc.Collection.prototype.getById = function(id) {
 mvc.Collection.prototype.at = function(index) {
     return this.models_[index<0?this.models_.length+index:index];
 };
+
+mvc.Collection.prototype.clear = function() {
+    this.models_ = [];
+}

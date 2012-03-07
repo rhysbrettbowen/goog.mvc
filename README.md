@@ -58,7 +58,7 @@ myClass.prototype.getEls = mvc.Control.prototype.getEls;
 
 ## mvc.Sync ##
 
-This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.sync.Ajax and mvc.sync.Local. The purpose of sync is to be the glue between the model and the dataStore.
+This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.AjaxSync and mvc.AjaxSync. The purpose of sync is to be the glue between the model and the dataStore.
 
 ## mvc.Router ##
 
@@ -84,15 +84,15 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 #### v0.3 ####
 
 - add dispose() to mvc.Model
-- fix mvc.sync.Local
+- fix mvc.AjaxSync
 
 #### v0.2 ####
 
 - fix model.Schema
 - mvc.Collection now takes optional index for add()
 - mvc.Collection.newModel adds a new model to the collection
-- mvc.sync.Ajax first implementation
-- mvc.sync.Local first implementation
+- mvc.AjaxSync first implementation
+- mvc.AjaxSync first implementation
 
 #### v0.1 ####
 

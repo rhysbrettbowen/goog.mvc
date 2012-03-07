@@ -7,6 +7,7 @@
 
 goog.provide('mvc.Router');
 
+goog.require('goog.array');
 goog.require('goog.events');
 goog.require('goog.History');
 
@@ -39,10 +40,13 @@ mvc.Router.prototype.navigate = function(fragment) {
  */
 mvc.Router.prototype.route = function(route, fn) {
     if(goog.isString(route))
-        var route = new RegExp('^' + goog.string.regExpEscape(route).replace(/:\w+/g, '(\w+)').replace(/\*\w+/g, '(.*?)') + '$');
+        route = new RegExp('^' + goog.string.regExpEscape(route).replace(/:\w+/g, '(\w+)').replace(/\*\w+/g, '(.*?)') + '$');
     this.routes_.push({route: route, callback: fn});
 }
 
+/**
+ * @private
+ */
 mvc.Router.prototype.onChange_ = function(e) {
     var fragment = this.history_.getToken();
     goog.array.forEach(this.routes_ || [], function(route) {
@@ -50,5 +54,5 @@ mvc.Router.prototype.onChange_ = function(e) {
         if(!args)
             return;
         route.callback.call(this, args);
-    });
+    }, this);
 };

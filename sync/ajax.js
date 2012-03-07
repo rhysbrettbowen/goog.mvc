@@ -1,23 +1,31 @@
 // v0.2
-goog.provide('mvc.sync.Ajax');
+goog.provide('mvc.AjaxSync');
 
-goog.require('mvc.sync');
+goog.require('mvc.Sync');
 
 goog.require('goog.net.XhrManager');
 
 /**
- * @implements {mvc.sync}
+ * @constructor
+ * @implements {mvc.Sync}
  */
-mvc.sync.Ajax = function(url) {
-
-    this.baseUrls_ = {};
+mvc.AjaxSync = function(url) {
+    
+    var baseFunction = function(model){return ""};
+    
+    this.baseUrls_ = {
+        create: baseFunction,
+        read: baseFunction,
+        update: baseFunction,
+        del: baseFunction
+    };
 
     if(goog.isString(url) || goog.isFunction(url)) {
         url = {
             create: url,
             read: url,
             update: url,
-            del: url,
+            del: url
         };
     }
     goog.object.extend(this.baseUrls_, goog.object.map(url, function(val) {
@@ -26,7 +34,7 @@ mvc.sync.Ajax = function(url) {
                 return model.get(id);
             });};
         return val;
-    });
+    }));
     this.xhr_ = new goog.net.XhrManager();
     this.sendCount_ = 0;
 };
@@ -34,37 +42,37 @@ mvc.sync.Ajax = function(url) {
 /**
  * @inheritDoc
  */
-mvc.sync.Ajax.prototype.create = function(model, callback) {
-    this.xhr_.send(this.sendCount_++, this.baseUrls_.create(model),
-        "POST", model.getJson(), undefined, 
-        goog.bind(this.onCreateComplete, this, model, callback));
+mvc.AjaxSync.prototype.create = function(model, callback) {
+    this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.create(model),
+        "POST", model.toJson().toString(), undefined, 
+        goog.bind(this.onCreateComplete_, this, model, callback));
 };
 
 /**
  * @inheritDoc
  */
-mvc.sync.Ajax.prototype.read = function(model, callback) {
-    this.xhr_.send(this.sendCount_++, this.baseUrls_.read(model),
+mvc.AjaxSync.prototype.read = function(model, callback) {
+    this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.read(model),
         "GET", undefined, undefined, 
-        goog.bind(this.onComplete, this, model, callback));
+        goog.bind(this.onReadComplete_, this, model, callback));
 };
 
 /**
  * @inheritDoc
  */
-mvc.sync.Ajax.prototype.update = function(model, callback) {
-    this.xhr_.send(this.sendCount_++, this.baseUrls_.update(model),
-        "PUT", model.getJson(), undefined, 
-        goog.bind(this.onUpdateComplete, this, model, callback));
+mvc.AjaxSync.prototype.update = function(model, callback) {
+    this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.update(model),
+        "PUT", model.toJson().toString(), undefined,
+        goog.bind(this.onUpdateComplete_, this, model, callback));
 };
 
 /**
  * @inheritDoc
  */
-mvc.sync.Ajax.prototype.delete = function(model, callback) {
-    this.xhr_.send(this.sendCount_++, this.baseUrls_.del(model),
+mvc.AjaxSync.prototype.del = function(model, callback) {
+    this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.del(model),
         "DELETE", undefined, undefined, 
-        goog.bind(this.onDeleteComplete, this, model, callback));
+        goog.bind(this.onDelComplete_, this, model, callback));
 };
 
 /**
@@ -72,11 +80,10 @@ mvc.sync.Ajax.prototype.delete = function(model, callback) {
  *
  * @param {mvc.Model} model
  * @param {Function} callback
- * @param {Event} e
  */
-mvc.sync.Ajax.prototype.onCreateComplete_ = function(model, callback, e) {
+mvc.AjaxSync.prototype.onCreateComplete_ = function(model, callback, e) {
     var xhr = e.target;
-    model.set('id') = xhr.getResponseJson()['result']['id'];
+    model.set('id', xhr.getResponseJson()['result']['id']);
 };
 
 /**
@@ -84,12 +91,11 @@ mvc.sync.Ajax.prototype.onCreateComplete_ = function(model, callback, e) {
  *
  * @param {mvc.Model} model
  * @param {Function} callback
- * @param {Event} e
  */
-mvc.sync.Ajax.prototype.onReadComplete_ = function(model, callback, e) {
-    var xhr = e.target;
+mvc.AjaxSync.prototype.onReadComplete_ = function(model, callback, e) {
+     var xhr = e.target;
     var json = xhr.getResponseJson()['result'];
-    goog.model.set(json);
+    model.set(json);
 };
 
 /**
@@ -97,9 +103,8 @@ mvc.sync.Ajax.prototype.onReadComplete_ = function(model, callback, e) {
  *
  * @param {mvc.Model} model
  * @param {Function} callback
- * @param {Event} e
  */
-mvc.sync.Ajax.prototype.onUpdateComplete_ = function(model, callback, e) {
+mvc.AjaxSync.prototype.onUpdateComplete_ = function(model, callback, e) {
 };
 
 /**
@@ -107,7 +112,6 @@ mvc.sync.Ajax.prototype.onUpdateComplete_ = function(model, callback, e) {
  *
  * @param {mvc.Model} model
  * @param {Function} callback
- * @param {Event} e
  */
-mvc.sync.Ajax.prototype.onDelComplete_ = function(model, callback, e) {
+mvc.AjaxSync.prototype.onDelComplete_ = function(model, callback, e) {
 };
