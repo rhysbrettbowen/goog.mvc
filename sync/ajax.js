@@ -30,8 +30,9 @@ mvc.AjaxSync = function(url) {
     }
     goog.object.extend(this.baseUrls_, goog.object.map(url, function(val) {
         if(goog.isString(val))
-            return function(model) {val.replace(/:(\w+)/g, function(id) {
-                return model.get(id);
+            return function(model) {
+                return val.replace(/:(\w+)/g, function(id) {
+                    return model.get(id);
             });};
         return val;
     }));
@@ -44,7 +45,7 @@ mvc.AjaxSync = function(url) {
  */
 mvc.AjaxSync.prototype.create = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.create(model),
-        "POST", model.toJson().toString(), undefined, 
+        "POST", model.toJson().toString(), undefined,  undefined,
         goog.bind(this.onCreateComplete_, this, model, callback));
 };
 
@@ -53,7 +54,7 @@ mvc.AjaxSync.prototype.create = function(model, callback) {
  */
 mvc.AjaxSync.prototype.read = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.read(model),
-        "GET", undefined, undefined, 
+        "GET", undefined, undefined, undefined,
         goog.bind(this.onReadComplete_, this, model, callback));
 };
 
@@ -62,7 +63,7 @@ mvc.AjaxSync.prototype.read = function(model, callback) {
  */
 mvc.AjaxSync.prototype.update = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.update(model),
-        "PUT", model.toJson().toString(), undefined,
+        "PUT", model.toJson().toString(), undefined, undefined,
         goog.bind(this.onUpdateComplete_, this, model, callback));
 };
 
@@ -71,7 +72,7 @@ mvc.AjaxSync.prototype.update = function(model, callback) {
  */
 mvc.AjaxSync.prototype.del = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.del(model),
-        "DELETE", undefined, undefined, 
+        "DELETE", undefined, undefined, undefined, 
         goog.bind(this.onDelComplete_, this, model, callback));
 };
 
