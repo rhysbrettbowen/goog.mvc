@@ -68,7 +68,8 @@ model.set({
     });
 model.meta('name', ['firstName', 'lastName'], function(firstName, lastName) {
     return lastName + ", " + Rhys;
-}); // returns "Brett-Bowen, Rhys"
+});
+model.get('name'); // returns "Brett-Bowen, Rhys"
 ```
 
 ## mvc.model.Schema ##
@@ -78,6 +79,10 @@ A schema can be set for a model. The schema takes in an object or map of keys an
 ## mvc.Collection ##
 
 A mvc.Collection extends mvc.Model and so has all of it's properties. Also a collection can contain an array of models that belong to it. A collection can keep these models in an order if given a comparator function and will also listen to changes and emit a change if any model it contains fires a change event.
+
+## mvc.Store ##
+
+This can be used as a factory and cache for models. Use the get to retrieve models by their ID and if they don't exist they will be created. This is good to make sure your models are unique. If no ID is passed then a new model will be created and you can get the model using it's CID until an ID is set for the model.
 
 ## mvc.Control ##
 
@@ -105,6 +110,7 @@ mvc.Router uses goog.History and hash tokens to hold and manage the state of the
 - split format function up to format, alias and meta
 - changes fired for constructed attributes
 - change the models constructor arguments to an options object
+- store added
 
 #### v0.5 ####
 
