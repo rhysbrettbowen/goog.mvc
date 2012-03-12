@@ -1,3 +1,10 @@
+//     goog.mvc 0.6
+
+//     (c) 2012 Rhys Brett-Bowen, Catch.com
+//     goog.mvc may be freely distributed under the MIT license.
+//     For all details and documentation:
+//     https://github.com/rhysbrettbowen/goog.mvc
+
 goog.provide('mvc.Store');
 
 goog.require('mvc.Model');
