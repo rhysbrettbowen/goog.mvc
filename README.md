@@ -23,19 +23,53 @@ goog.require('mvc.Model');
  * @constructor
  * @inheritDoc
  */
-var complexModel = function(attr, schema) {
-    goog.base(this, attr, schema);
+var Person = function(firstName, lastName) {
+    goog.base(this, {attr: {
+        'firstName': firstName,
+        'lastName': lastName
+    }});
+    this.meta('name', ['firstName','lastName'], function(firstName, lastName) {
+        return lastName + ", " + firstName;
+    });
 };
-goog.inherits(complexModel, mvc.Model);
+goog.inherits(Person, mvc.Model);
 ```
 
-Any setup would go in the constructor function and you can override methods and add new methods of your own.
+Any setup would go in the constructor function (in the above we used the meta function to create a meta attribute). You can override methods and add new methods of your own.
 
-When creating a new model instance, the constructor takes two optional arguments. The first is a map or object with the initial keys and values of the model. The second is a schema which will be described in the next section
+When creating a new model instance, the constructor takes an options object. The options are attr, schema and sync. The attr option will create a model and set the attributes passed. The schema and sync can be used to pass in an mvc schema or sync object to use.
 
 You should always use the get() and set() functions when dealing with the model's data. These functions take care of saving old data and publishing change events
 
-There is also a format function that allows you to format the data when you get it, or even create new attributes using existing ones
+There are also three functions that allow you to manipulate how you can get the data. 
+
+The alias function allows you to get a member using a different name
+
+```javascript
+model.set('lastName', 'Brett-Bowen');
+model.alias('surname', 'lastName');
+model.get('surname'); // returns 'Brett-Bowen'
+```
+
+The format function allows you to change how the data is presented
+
+```javascript
+model.set('now', new Date());
+model.format('now', function(now) {return now.toDateString()});
+model.get('now'); // returns the set date as a string
+```
+
+The meta function is passed the new variable name, an array or attributes to base the data off and the formatting function.
+
+```javascript
+model.set({
+    'firstName': 'Rhys',
+    'lastName': 'Brett-Bowen'
+    });
+model.meta('name', ['firstName', 'lastName'], function(firstName, lastName) {
+    return lastName + ", " + Rhys;
+}); // returns "Brett-Bowen, Rhys"
+```
 
 ## mvc.model.Schema ##
 
@@ -58,13 +92,19 @@ myClass.prototype.getEls = mvc.Control.prototype.getEls;
 
 ## mvc.Sync ##
 
-This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.AjaxSync and mvc.AjaxSync. The purpose of sync is to be the glue between the model and the dataStore.
+This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.AjaxSync and mvc.LocalSync. The purpose of sync is to be the glue between the model and the dataStore.
 
 ## mvc.Router ##
 
 mvc.Router uses goog.History and hash tokens to hold and manage the state of the application. You can define a route with a regular expression that will fire custom events when a certain route comes on the URL.
 
 ### changelog ###
+
+#### v0.6 ####
+
+- split format function up to format, alias and meta
+- changes fired for constructed attributes
+- change the models constructor arguments to an options object
 
 #### v0.5 ####
 

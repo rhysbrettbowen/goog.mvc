@@ -1,4 +1,4 @@
-//     goog.mvc 0.5
+//     goog.mvc 0.6
 
 //     (c) 2012 Rhys Brett-Bowen, Catch.com
 //     goog.mvc may be freely distributed under the MIT license.
@@ -8,26 +8,21 @@
 goog.provide('mvc.Model');
 goog.provide('mvc.model.Schema');
 
-
 goog.require('goog.array');
 goog.require('goog.events');
 goog.require('goog.events.EventTarget');
 goog.require('goog.object');
 
-/*
- * Based on Backbone.js
- */
 
 /** 
  * Pass an object with key value pairs for the attributes of the model
  *
  * @constructor
  * @extends goog.events.EventTarget
- * @param {Object=} attr
- * @param {mvc.model.Schema=} schema
- * @param {mvc.Sync=} sync
+ * @param {Object=} options can take in the arguments attr, schema and sync
  */
-mvc.Model = function(attr, schema, sync) {
+mvc.Model = function(options) {
+    options = options || {};
     /**
      * @private
      * @type {Object.<string, ?Object>}
@@ -47,13 +42,13 @@ mvc.Model = function(attr, schema, sync) {
      * @private
      * @type {?mvc.model.Schema}
      */
-    this.schema_ = schema || null;
+    this.schema_ = options.schema || null;
     
-    this.sync_ = sync;
+    this.sync_ = options.sync|| null;
     
     this.cid_ = goog.getUid(this);
     
-    goog.object.forEach((attr || []), function(val, name) {
+    goog.object.forEach((options.attr || []), function(val, name) {
         this.attr_[name] = val;
     }, this);
     
@@ -81,7 +76,7 @@ mvc.Model.prototype.setSync = function(sync) {
  */
 mvc.Model.prototype.get = function(key) {
     if(this.formats_[key])
-        return this.formats_[key]();
+        return this.formats_[key].fn();
     return goog.object.get(this.attr_, key, null);
 }
 
@@ -136,41 +131,52 @@ mvc.Model.prototype.set = function(key, val, silent) {
 };
 
 /**
- * Can be used to change the output of an attribute, or create alias or
- * meta-attributes.
- * change get format like this:
- * model.format('date', function(date) {
- *  return date.getMonth()+"/"+date.getYear();});
- * setup a new alias
- * model.format('last_name', 'surname');
- * setup a meta-attr
- * model.format('date', ['day', 'month', 'year'], function(day, month, year) {
- *  return day+"/"+month+"/"+year;});
+ * Can be used to create an alias, e.g:
+ * model.alias('surname', 'lastName');
  *
- * @param {string} attr the new attribute name or attribute to set a format for
- * @param {Function|string|Array.<string>} formatter the formatting function,
- *  the attribute to alias or an array of attributes to use. The function will
- *  be passed the value and be bound to the model
- * @param {Function=} fn function to put together the meta-attribute
- * @return {mvc.Model}
+ * @param {string} newName
+ * @param {string} oldName
  */
-mvc.Model.prototype.format = function(attr, formatter, fn) {
-    if(goog.isString(formatter)) {
-        this.formats_[attr] = goog.bind(function() {
-            return this.attr_[formatter];
-        }, this);
-    } else if (goog.isFunction(formatter)) {
-        this.formats_[attr] = goog.bind(function() {
-            return /** @type {Function} */(formatter)(this.attr_[attr], this);
-        }, this);
-    } else if (goog.isArrayLike(formatter)) {
-        this.formats_[attr] = goog.bind(function() {
-            return fn.apply(this, goog.array.map(/** @type {Array} */(formatter), function(val) {
-                return this.attr_[val];
-            }, this));
-        }, this);
-    }
-    return this;
+mvc.Model.prototype.alias = function(newName, oldName)  {
+    this.formats_[newName] = {attr: [oldName],
+        fn: goog.bind(function() {
+            return this.get(oldName);
+        }, this)};
+};
+
+/**
+ * Can be used to change format returned when using get, e.g:
+ * model.format('date', function(date) {return date.toDateString();});
+ *
+ * @param {string} newName
+ * @param {string} oldName
+ */
+mvc.Model.prototype.format = function(attr, fn)  {
+    this.formats_[attr] = {attr: [attr],
+        fn: goog.bind(function() {
+            return /** @type {Function} */(fn)(this.attr_[attr], this);
+        }, this)};
+};
+
+/**
+ * Can be used to make an attribute out of other attributes. This can be bound
+ * and will fire whenever a change is made to the required attributes e.g.
+ * model.meta('fullName', ['firstName', 'lastName'],
+ *     function(firstName, lastName){
+ *         return firstName + " " + lastName;
+ *     });
+ *
+ * @param {string} attr
+ * @param {Array.<string>} require
+ * @param {Function} fn
+ */
+mvc.Model.prototype.meta = function(attr, require, fn) {
+    this.formats_[attr] = {attr: require,
+        fn: goog.bind(function() {
+        return fn.apply(this, goog.array.map(/** @type {Array} */(require), function(val) {
+            return this.get(val);
+        }, this));
+    }, this)};
 }
 
 /**
@@ -203,7 +209,13 @@ mvc.Model.prototype.prev = function(key) {
  * returns object of changed attributes and their values
  */
 mvc.Model.prototype.getChanges = function() {
-    return goog.object.filter(this.attr_, function(val, key) {
+    return 
+    goog.object.filter(this.formats_, function(val) {
+        return goog.array.some(val.attr, function(require) {
+            return this.attr_[require] != this.prev_[require];
+        }, this);
+    }, this);
+    goog.object.filter(this.attr_, function(val, key) {
         return val != this.prev_[key];
     }, this);
 };
@@ -215,7 +227,9 @@ mvc.Model.prototype.getChanges = function() {
  */
 mvc.Model.prototype.revert = function() {
     var newAttr = {};
-    goog.object.extend(newAttr, goog.object.map(this.ext_, function(val) {return {val: val, prev: null};}));
+    goog.object.extend(newAttr, goog.object.map(this.ext_, function(val) {
+        return {val: val, prev: null};
+    }));
     goog.object.forEach(this.attr_, function(val, key) {
         if(key in newAttr) {
             newAttr[key].prev = val;
@@ -234,8 +248,8 @@ mvc.Model.prototype.dispose = function() {
 /**
  * reads an object fomr an external source using sync
  *
- * @param {function(Object, number, mvc.Model)} callback
- * @param {boolean} silent
+ * @param {function(Object, number, mvc.Model)=} callback
+ * @param {boolean=} silent
  */
 mvc.Model.prototype.fetch = function(callback, silent) {
     var success = goog.bind(function(data, status) {
@@ -273,7 +287,7 @@ mvc.Model.prototype.getBinder = function(key) {
 
 /**
  * Allows easy binding of a model's attributre to an element or a function.
- * bind('name', Element(s)) would change the text content to the model's name
+ * bind('name', Element(s)) would change the value to the model's name
  * bind('name', Element(s), function(El, attr)) runs a function with the element
  * and the attributes value
  * bind('name', function(value), handler) allows you to run a function and
@@ -282,7 +296,7 @@ mvc.Model.prototype.getBinder = function(key) {
  * any change to the model and pass in the model
  *
  * @param {string|Array.<string>} name
- * @param {Element|Node|Function|*} el
+ * @param {Function|*} el
  * @param {Function|*} fn
  */
 mvc.Model.prototype.bind = function(name, el, fn) {
