@@ -103,7 +103,21 @@ This is an interface that should have a custom implementation. Two simple implem
 
 mvc.Router uses goog.History and hash tokens to hold and manage the state of the application. You can define a route with a regular expression that will fire custom events when a certain route comes on the URL.
 
+## mvc.Mediator ##
+
+mvc.Mediator allows message passing between components. It's a singleton so you get it's reference using
+
+```javascript
+var mediator = mvc.Mediator.getInstance();
+```
+
+you can then register your object with the mediator and the messages that you may pass. This allows other modules that are listening for a specific message to run some initiation, or dispose when you unregister. You can listen to messages using the on method and stop using the off method. You can even test to see if anyone is listening for a message using the isListened method
+
 ### changelog ###
+
+#### v0.7 ###
+
+- add in mvc.Mediator
 
 #### v0.6 ####
 
