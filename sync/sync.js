@@ -10,9 +10,10 @@ goog.provide('mvc.Sync');
  */
 mvc.Sync = function() {};
 
-/**
- * @enum {number}
- */
+
+/*
+This can be used for HTTP status
+
 mvc.Sync.Status = {
     // Successful
     OK: 200,
@@ -34,7 +35,7 @@ mvc.Sync.Status = {
     NOT_IMPLEMENTED: 501,
     BAD_GATEWAY: 502,
     GATEWAY_TIMEOUT: 504
-}
+}*/
 
 /**
  * take in the model to push to server (use .toJson()) and call callback when done

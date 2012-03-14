@@ -22,7 +22,15 @@ goog.require('goog.object');
  * @param {Object=} options can take in the arguments attr, schema and sync
  */
 mvc.Model = function(options) {
-    options = options || {};
+    var defaults = {
+        schema: null,
+        sync: null,
+        attr: []
+    };
+
+    if(options)
+        goog.object.extend(defaults, options);
+
     /**
      * @private
      * @type {Object.<string, ?Object>}
@@ -30,7 +38,7 @@ mvc.Model = function(options) {
     this.attr_ = {};
     /**
      * @private
-     * @type {Object.<string, ?Function>}
+     * @type {Object.<{attr: Array.<string>, fn: Function}>}
      */
     this.formats_ = {};
     /**
@@ -42,9 +50,9 @@ mvc.Model = function(options) {
      * @private
      * @type {?mvc.model.Schema}
      */
-    this.schema_ = options.schema || null;
+    this.schema_ = defaults.schema || null;
     
-    this.sync_ = options.sync|| null;
+    this.sync_ = defaults.sync|| null;
     
     this.cid_ = goog.getUid(this);
     
@@ -54,13 +62,14 @@ mvc.Model = function(options) {
     
     this.dispatchEvent(goog.events.EventType.LOAD);
 };
-
 goog.inherits(mvc.Model, goog.events.EventTarget);
+
+
 
 /**
  * returns full copy of the attributes
  *
- * @return {Object.<string, Object>}
+ * @return {!Object}
  */
 mvc.Model.prototype.toJson = function() {
     return goog.object.clone(this.attr_);
@@ -108,9 +117,10 @@ mvc.Model.prototype.has = function(key) {
  * @param {Object|string} key object of key value pairs to set, or the key
  * @param {Object=} val to use if the key is a string
  * @param {boolean=} silent true if no change event should be fired
- * @return {mvc.Model}
+ * @return {boolean}
  */
 mvc.Model.prototype.set = function(key, val, silent) {
+    var success = true;
     if(goog.isString(key)) {
         var temp = {};
         temp[key] = val;
@@ -120,14 +130,23 @@ mvc.Model.prototype.set = function(key, val, silent) {
         this.prev_ = goog.object.clone(this.attr_);
     }
     goog.object.forEach(key, function(val, key) {
-        if(!this.schema_ || this.schema_.validate(key, val)) {
+        if(!this.schema_ || val == undefined) {
             this.attr_[key] = val;
+        } else {
+            var validate = this.schema_.validate(key, val);
+            if(goog.isDef(validate))
+                this.attr_[key] = validate;
+            else
+                success = false;
         }
     }, this);
-    if(!silent) {
-        this.dispatchEvent(goog.events.EventType.CHANGE);
+    if(success) {
+        if(!silent) {
+            this.dispatchEvent(goog.events.EventType.CHANGE);
+        }
+        return true;
     }
-    return this;
+    return false;
 };
 
 /**
@@ -148,8 +167,8 @@ mvc.Model.prototype.alias = function(newName, oldName)  {
  * Can be used to change format returned when using get, e.g:
  * model.format('date', function(date) {return date.toDateString();});
  *
- * @param {string} newName
- * @param {string} oldName
+ * @param {string} attr
+ * @param {Function} fn
  */
 mvc.Model.prototype.format = function(attr, fn)  {
     this.formats_[attr] = {attr: [attr],
@@ -182,7 +201,7 @@ mvc.Model.prototype.meta = function(attr, require, fn) {
 /**
  * @param {string} key
  * @param {boolean=} silent true if no change event should be fired
- * @return {mvc.Model}
+ * @return {boolean}
  */
 mvc.Model.prototype.unset = function(key, silent) {
      return this.set(key, undefined, silent);
@@ -209,15 +228,16 @@ mvc.Model.prototype.prev = function(key) {
  * returns object of changed attributes and their values
  */
 mvc.Model.prototype.getChanges = function() {
-    return 
-    goog.object.filter(this.formats_, function(val) {
+    var ret = goog.object.getKeys(goog.object.filter(this.formats_, function(val) {
         return goog.array.some(val.attr, function(require) {
             return this.attr_[require] != this.prev_[require];
         }, this);
-    }, this);
-    goog.object.filter(this.attr_, function(val, key) {
-        return val != this.prev_[key];
-    }, this);
+    }, this));
+    goog.array.extend(ret, goog.object.getKeys(goog.object.filter(this.attr_,
+        function(val, key) {
+            return val != this.prev_[key];
+        }, this)));
+    return ret;
 };
 
 /**
@@ -297,7 +317,7 @@ mvc.Model.prototype.getBinder = function(key) {
  *
  * @param {string|Array.<string>} name
  * @param {Function|*} el
- * @param {Function|*} fn
+ * @param {Function|*=} fn
  */
 mvc.Model.prototype.bind = function(name, el, fn) {
     goog.events.listen(this, goog.events.EventType.CHANGE, function(e) {
@@ -383,10 +403,20 @@ mvc.model.Schema.Test = function(obj) {
         }
         return false;
     };
-}
+};
+
+mvc.model.Schema.prototype.onErr = function(message) {
+    alert(message);
+};
 
 mvc.model.Schema.prototype.validate = function(key, val) {
-    if(key in this.schema_)
-        return this.schema_[key](val);
-    return true;
+    if(key in this.schema_) {
+        try{
+            return this.schema_[key](val);
+        } catch(err) {
+            this.onErr(err.message);
+            return undefined;
+        }
+    }
+    return val;
 };

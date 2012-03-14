@@ -118,6 +118,8 @@ you can then register your object with the mediator and the messages that you ma
 #### v0.7 ###
 
 - add in mvc.Mediator
+- schema now throws errors and handles them
+- fixes
 
 #### v0.6 ####
 

@@ -11,18 +11,29 @@ goog.require('mvc.Model');
 goog.require('goog.events.Event');
 goog.require('goog.events.EventTarget');
 
+
 /**
  * A collection of models
  *
  * @constructor
  * @extends mvc.Model
- * @param {?Array.<mvc.Model>} models
- * @param {function(new:mvc.Model)=} modelType is the base type of model to use when creating a new model in the collection
- * @param {mvc.Sync=} sync
+ * @param {Object=} options
  */
-mvc.Collection = function(models, modelType, sync) {
-    goog.base(this);
-    this.sync_ = sync;
+mvc.Collection = function(options) {
+    goog.base(this, options);
+    
+    var defaults = {
+        sync: null,
+        comparator: null,
+        modelType: mvc.Model,
+        models: [],
+        schema: null
+    };
+    
+    if(options)
+        goog.object.extend(defaults, options);
+    
+    this.sync_ = defaults.sync;
     /**
      * @private
      * @type {Array.<mvc.Model>}
@@ -32,18 +43,19 @@ mvc.Collection = function(models, modelType, sync) {
      * @private
      * @type {?function(mvc.Model, mvc.Model):number}
      */
-    this.comparator_ = null;
+    this.comparator_ = defaults.comparator;
     
     /**
      * @private
      */
-    this.modelType_ = modelType;
+    this.modelType_ = defaults.modelType;
     
-    goog.array.forEach(models || [], function(model) {
+    goog.array.forEach(defaults.models, function(model) {
         this.add(model, undefined, true);
     }, this);
 };
 goog.inherits(mvc.Collection, mvc.Model);
+
 
 /**
  * @return {Array}
@@ -181,6 +193,18 @@ mvc.Collection.prototype.getById = function(id) {
         return model.get('id') == id;
     }));
 }
+
+/**
+ * get all the models, optionally filter by function
+ *
+ * @param {function(mvc.Model):Boolean=} filter
+ * @return {Array.<mvc.Model>}
+ */
+mvc.Collection.prototype.getModels = function(filter) {
+    if(filter)
+        return goog.array.filter(this.models_, /** @type {Function} */(filter));
+    return this.models_.slice(0);
+};
 
 /**
  * get a model by it's index in the collection

@@ -4,6 +4,7 @@ goog.provide('mvc.AjaxSync');
 goog.require('mvc.Sync');
 
 goog.require('goog.net.XhrManager');
+goog.require('goog.Uri.QueryData');
 
 /**
  * @constructor
@@ -44,8 +45,9 @@ mvc.AjaxSync = function(url) {
  * @inheritDoc
  */
 mvc.AjaxSync.prototype.create = function(model, callback) {
+    
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.create(model),
-        "POST", model.toJson().toString(), undefined,  undefined,
+        "POST", goog.Uri.QueryData.createFromMap(model.toJson()).toString(), undefined,  undefined,
         goog.bind(this.onCreateComplete_, this, model, callback));
 };
 
@@ -63,7 +65,7 @@ mvc.AjaxSync.prototype.read = function(model, callback) {
  */
 mvc.AjaxSync.prototype.update = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.update(model),
-        "PUT", model.toJson().toString(), undefined, undefined,
+        "PUT", goog.Uri.QueryData.createFromMap(model.toJson()).toString(), undefined, undefined,
         goog.bind(this.onUpdateComplete_, this, model, callback));
 };
 
