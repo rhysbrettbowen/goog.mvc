@@ -1,4 +1,4 @@
-//     goog.mvc 0.7
+//     goog.mvc 0.9
 
 //     (c) 2012 Rhys Brett-Bowen, Catch.com
 //     goog.mvc may be freely distributed under the MIT license.

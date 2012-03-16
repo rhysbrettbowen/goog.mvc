@@ -1,4 +1,4 @@
-//     goog.mvc 0.6
+//     goog.mvc 0.9
 
 //     (c) 2012 Rhys Brett-Bowen, Catch.com
 //     goog.mvc may be freely distributed under the MIT license.
@@ -23,13 +23,21 @@ goog.require('goog.object');
  */
 mvc.Model = function(options) {
     var defaults = {
-        schema: null,
-        sync: null,
-        attr: []
+        'schema': null,
+        'sync': null,
+        'attr': {}
     };
+    
+    if(!options)
+        options = {};
+    options.attr = options.attr || {};
+    
+    goog.object.forEach(options, function(val, key) {
+        if(!goog.isDef(defaults[key]))
+            defaults.attr[key] = val;
+    });
 
-    if(options)
-        goog.object.extend(defaults, options);
+    goog.object.extend(defaults, options);
 
     /**
      * @private
@@ -53,6 +61,12 @@ mvc.Model = function(options) {
     this.schema_ = defaults.schema || null;
     
     this.sync_ = defaults.sync|| null;
+    
+    this.bound_ = [];
+    this.boundAll_ = {};
+    
+    this.changeHandler_ = goog.events.listen(this,
+        goog.events.EventType.CHANGE, this.change_, false, this);
     
     this.cid_ = goog.getUid(this);
     
@@ -231,10 +245,6 @@ mvc.Model.prototype.prev = function(key) {
     return goog.object.get(this.prev_, key, null);
 };
 
-mvc.Model.prototype.change = function() {
-    this.dispatchEvent(goog.events.EventType.CHANGE);
-};
-
 /**
  * returns object of changed attributes and their values
  */
@@ -316,8 +326,27 @@ mvc.Model.prototype.getBinder = function(key) {
     return goog.bind(this.set, this, key);
 };
 
+mvc.Model.prototype.change_ = function(e) {
+    var changes = this.getChanges();
+    goog.object.forEach(this.bound_, function(val, key) {
+        if(goog.array.some(val.attr, function(attr) {
+            return !!changes[attr];
+        })) {
+            val.fn.apply(val.hn, goog.array.concat(goog.array.map(val.attr,
+                function(attr) {
+                    return this.get(attr);
+                }),[this]));
+        }
+    }, this);
+    goog.object.forEach(this.boundAll_, function(val) {
+        val(this);
+    }, this);
+};
+
+
+
 /**
- * Allows easy binding of a model's attributre to an element or a function.
+ * Allows easy binding of a model's attribute to an element or a function.
  * bind('name', Element(s)) would change the value to the model's name
  * bind('name', Element(s), function(El, attr)) runs a function with the element
  * and the attributes value
@@ -326,29 +355,43 @@ mvc.Model.prototype.getBinder = function(key) {
  * if no name is passed (null or undefined) then the operation will be run on
  * any change to the model and pass in the model
  *
- * @param {?string} name
- * @param {Function|*} el
- * @param {Function|*=} fn
+ * @param {Array|string} name
+ * @param {Function} fn
+ * @param {*=} opt_handler
  */
-mvc.Model.prototype.bind = function(name, el, fn) {
-    goog.events.listen(this, goog.events.EventType.CHANGE, function(e) {
-        var changes = e.target.getChanges();
-        if(name in changes || !goog.isDefAndNotNull(name)) {
-            if(goog.isFunction(el)) {
-                goog.bind(el, /** @type {Function} */(fn))(changes[name], this);
-                return;
-            }
-            if(!goog.isArrayLike(el))
-                el = [el];
-            goog.array.forEach(/** @type {Array} */(el), function(elem) {
-                if(goog.isFunction(fn)) {
-                    fn(elem, changes[name] || this);
-                } else {
-                    elem = changes[name] || this;
-                }
-            }, this);
-        }
-    }, false, this);
+mvc.Model.prototype.bind = function(name, fn, opt_handler) {
+    if(goog.isString(name))
+        name = [name];
+    var bind = {
+        attr: name,
+        fn: fn,
+        hn: (opt_handler || this)
+    };
+    bind.cid = goog.getUid(bind);
+    this.bound_.push(bind);
+    return bind.cid;
+};
+
+/**
+ * unbind a listener by id
+ */
+mvc.Model.prototype.unbind = function(id) {
+    return goog.array.removeIf(this.bound_, function(bound) {
+        return (bound.id == id);
+    }) || goog.object.remove(this.boundAll_, id);
+};
+
+/**
+ * bind to any change event
+ *
+ * @param {Function} fn
+ * @param {Object=} opt_handler
+ */
+mvc.Model.prototype.bindAll = function(fn, opt_handler) {
+    var bound = goog.bind(fn, (opt_handler || this));
+    var id = goog.getUid(bound);
+    goog.object.set(this.boundAll_, ""+id, bound);
+    return id;
 };
 
 /**

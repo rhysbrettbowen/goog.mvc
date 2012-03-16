@@ -1,4 +1,9 @@
-// v0.3
+//      goog.mvc v0.3
+
+//     (c) 2012 Rhys Brett-Bowen, Catch.com
+//     goog.mvc may be freely distributed under the MIT license.
+//     For all details and documentation:
+//     https://github.com/rhysbrettbowen/goog.mvc
 goog.provide('mvc.LocalSync');
 
 goog.require('goog.storage.Storage');

@@ -1,4 +1,10 @@
-// v0.1
+//      goog.mvc v0.9
+
+//     (c) 2012 Rhys Brett-Bowen, Catch.com
+//     goog.mvc may be freely distributed under the MIT license.
+//     For all details and documentation:
+//     https://github.com/rhysbrettbowen/goog.mvc
+
 goog.provide('mvc.Sync');
 
 

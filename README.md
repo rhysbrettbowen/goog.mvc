@@ -72,22 +72,13 @@ model.meta('name', ['firstName', 'lastName'], function(firstName, lastName) {
 model.get('name'); // returns "Brett-Bowen, Rhys"
 ```
 
-the real power in a model comes in binding. You can bind keys, or computed keys to functions or attributes. The bind function takes three arguments. The first is the attribute name or an array of attribute names whose changes you want to listen to. The second is a function which will be passed the value of each of the items you are listening to and the model. Alternatively if you want to bind a value on an object you can just pass the reference as such:
-
-```javascript
-var school = {'name':"SHS",'principal':"someone"};
-var principal = new mvc.Model({'name':"someone"});
-// school principal should always be the same as principal name
-principal.bind('name',school['name']);
-```
-
-if you want to bind it between two models, we give you a helper function:
+the real power in a model comes in binding. You can bind keys, or computed keys to functions or attributes. The bind function takes three arguments. The first is the attribute name or an array of attribute names whose changes you want to listen to. The second is a function which will be passed the value of each of the items you are listening to and the model. If you want to bind it between two models, we give you a helper function:
 
 ```
 // married couple living together
 var husband = new mvc.Model({'city':'San Francisco'});
 var wife = new mvc.Model({'city':'San Francisco'});
-husband.bind('city',wife.setBinder('city'));
+husband.bind('city', wife.setBinder('city'));
 ```
 
 The final parameter is the object to bind the function to. So you could do this:
@@ -100,6 +91,10 @@ task.bind(['done','important'], function(done, important) {
     this.setProperty('important', important);
 }, element);
 ```
+
+if you want to listen to any change you can use bindAll and just pass in a function.
+
+The bindAll and bind functions return an id that can be passed to unbind to remove the binding.
 
 There are also other functions that can take parameters such as the boolean "silent" to suppress change events. The other functions available on a model are:
 - toJson: used to return a json model that can be used by mvc.Sync or other objects. You should generally override this method with your own implementation
@@ -209,6 +204,10 @@ var mediator = mvc.Mediator.getInstance();
 you can then register your object with the mediator and the messages that you may pass. This allows other modules that are listening for a specific message to run some initiation, or dispose when you unregister. You can listen to messages using the on method and stop using the off method. You can even test to see if anyone is listening for a message using the isListened method
 
 ### changelog ###
+
+#### v0.9 ####
+
+- reworked bind for performance
 
 #### v0.8 ####
 
