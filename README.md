@@ -37,7 +37,7 @@ goog.inherits(Person, mvc.Model);
 
 Any setup would go in the constructor function (in the above we used the meta function to create a meta attribute). You can override methods and add new methods of your own.
 
-When creating a new model instance, the constructor takes an options object. The options are attr, schema and sync. The attr option will create a model and set the attributes passed. The schema and sync can be used to pass in an mvc schema or sync object to use.
+When creating a new model instance, the constructor takes an options object. The options object takes the special keys 'schema', 'sync' and 'attr'. The schema should inherit from mvc.models.Schema, the sync should implement mvc.Sync. The attr should contain a map of all the initial values you want for the model. Other key value pairs given in the options object will be moved under the attr key.
 
 You should always use the get() and set() functions when dealing with the model's data. These functions take care of saving old data and publishing change events
 
@@ -72,13 +72,86 @@ model.meta('name', ['firstName', 'lastName'], function(firstName, lastName) {
 model.get('name'); // returns "Brett-Bowen, Rhys"
 ```
 
+the real power in a model comes in binding. You can bind keys, or computed keys to functions or attributes. The bind function takes three arguments. The first is the attribute name or an array of attribute names whose changes you want to listen to. The second is a function which will be passed the value of each of the items you are listening to and the model. Alternatively if you want to bind a value on an object you can just pass the reference as such:
+
+```javascript
+var school = {'name':"SHS",'principal':"someone"};
+var principal = new mvc.Model({'name':"someone"});
+// school principal should always be the same as principal name
+principal.bind('name',school['name']);
+```
+
+if you want to bind it between two models, we give you a helper function:
+
+```
+// married couple living together
+var husband = new mvc.Model({'city':'San Francisco'});
+var wife = new mvc.Model({'city':'San Francisco'});
+husband.bind('city',wife.setBinder('city'));
+```
+
+The final parameter is the object to bind the function to. So you could do this:
+
+```javascript
+var task = new mvc.Model({'done':false,'important':false});
+var element = document.getElementById('myTask');
+task.bind(['done','important'], function(done, important) {
+    this.checked = done;
+    this.setProperty('important', important);
+}, element);
+```
+
+There are also other functions that can take parameters such as the boolean "silent" to suppress change events. The other functions available on a model are:
+- toJson: used to return a json model that can be used by mvc.Sync or other objects. You should generally override this method with your own implementation
+- setSync(mvc.Sync): will set the sync used by the object
+- reset(silent): clears the attributes
+- isNew: returns a boolean if an id has been set (rather than just a cid)
+- setSchema(mvc.model.Schema): sets the schema
+- has(string): whether the model has the key
+- unset(string): deletes a key (sets to undefined)
+- change: manually fire a change event - handy if you've been using silent for bulk operations
+- prev(string): the previous value of an attribute, gets the raw data
+- getChanges: tells you what values has changed since the last change event used internally by bind to figure out what to fire change events for
+- revert: rolls back to the previous attributes
+- fetch(callback, silent): updates the model using it's sync
+- save: tells the sync to create/update
+
+
 ## mvc.model.Schema ##
 
-A schema can be set for a model. The schema takes in an object or map of keys and functions. The functions take in a value and return true or false. When a schema is passed in to a model, the model will use this to validate any values trying to be set, and won't add in data if a function returns false. You can also pass in the following strings to check for the type of input: "number", "string", "array"
+A schema can be set for a model. The schema takes in an object or map of keys and functions. The functions take in a value, throw an error if the data is invalid and should return the value to be set in the model. In this way the schema can also act as a setter, doing all the formatting and checking. When a schema is passed in to a model, the model will use this to validate any values trying to be set, and won't add in data if a function throws an error. You can also pass in the following strings to check for the type of input: "number", "string", "array"
 
 ## mvc.Collection ##
 
-A mvc.Collection extends mvc.Model and so has all of it's properties. Also a collection can contain an array of models that belong to it. A collection can keep these models in an order if given a comparator function and will also listen to changes and emit a change if any model it contains fires a change event.
+A mvc.Collection extends mvc.Model and so has all of it's properties. Also a collection can contain an array of models that belong to it. A collection can keep these models in an order if given a comparator function which works the same as the javascript array.sort function - taking two models and returning -1, 0 or 1 and will also listen to changes and emit a change if any model it contains fires a change event.
+
+The mvc.Collection can also take a modelType which works with the newModel method that takes an options map and will create a new model of the type passed in. So you can create new students is a class like this:
+
+```javascript
+var student = function(options){
+    goog.base(this, options)
+};
+goog.inherits(student, mvc.Model);
+var class = new mvc.Collection({
+    'modelType': student,
+    'name': 'clodure mvc 101'
+});
+class.addModel({'name':'Fred'});
+// class now has a student called fred
+```
+
+A collection also offers these aditional methods:
+
+- pluck([keys]): returns an array of json models with the keys and values of each model
+- setComparator(Function): change the comparator function to keep the models in order
+- getLength: number of models contained
+- sort(silent): used internally to sort the models
+- add(mvc.Model, index, silent): adds a model to the end unless an index is given
+- remove(mvc.Model): removes the model
+- getById(id): returns a model by it's id
+- getModels(Function): returns an array of the models optionally filtered by a function that takes the model and the index and returns true if it should be returned in the filter otherwise false
+- at(index): return the model at an index
+- clear: clears all the models
 
 ## mvc.Store ##
 
@@ -95,13 +168,35 @@ myClass.prototype.delegateEvents = mvc.Control.prototype.delegateEvents;
 myClass.prototype.getEls = mvc.Control.prototype.getEls;
 ```
 
+There is also a set of functions under mvc.Control.Fn that can be passed to mvc.Model.bind for frequently used setters (changing textContent, value and classes so far - feel free to extend it with more commonly used functions)
+
 ## mvc.Sync ##
 
 This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.AjaxSync and mvc.LocalSync. The purpose of sync is to be the glue between the model and the dataStore.
+                                                           
 
 ## mvc.Router ##
 
-mvc.Router uses goog.History and hash tokens to hold and manage the state of the application. You can define a route with a regular expression that will fire custom events when a certain route comes on the URL.
+mvc.Router uses goog.History and hash tokens to hold and manage the state of the application. You can define a route with a regular expression that will fire custom events when a certain route comes on the URL. A route can be defined with a route expression which can take : followed by an attribute, a * to pass the rest of the route and [] for an optional part of the url (which will be passed to the function). For instance:
+
+```javascript
+route = "/note=:id[/edit][?*]";
+```
+should take a function with four attribute:
+```javascript
+function(id,edit,query,queryVals)
+```
+
+so for /note=1234567890/edit?abc=123 will give:
+
+```javascript
+function(id,edit,query,queryVals) {
+    console.log(id); // 1234567890
+    console.log(edit); // /edit
+    console.log(query); // ?abc=123
+    console.log(queryVals); // abc=123
+}
+```
 
 ## mvc.Mediator ##
 
@@ -124,7 +219,7 @@ you can then register your object with the mediator and the messages that you ma
 - change function to fire change events on mvc.Model
 - ajax sync now has urlifyString
 
-#### v0.7 ###
+#### v0.7 ####
 
 - add in mvc.Mediator
 - schema now throws errors and handles them
