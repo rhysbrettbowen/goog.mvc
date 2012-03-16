@@ -56,7 +56,7 @@ mvc.Model = function(options) {
     
     this.cid_ = goog.getUid(this);
     
-    goog.object.forEach((options.attr || []), function(val, name) {
+    goog.object.forEach(defaults.attr, function(val, name) {
         this.attr_[name] = val;
     }, this);
     
@@ -77,7 +77,14 @@ mvc.Model.prototype.toJson = function() {
 
 mvc.Model.prototype.setSync = function(sync) {
     this.sync_ = sync;
-}
+};
+
+mvc.Model.prototype.reset = function(silent) {
+    this.prev_ = this.attr_;
+    this.attr_ = {};
+    if(!silent)
+        this.change();
+};
 
 /**
  * @param {string} key
@@ -87,21 +94,21 @@ mvc.Model.prototype.get = function(key) {
     if(this.formats_[key])
         return this.formats_[key].fn();
     return goog.object.get(this.attr_, key, null);
-}
+};
 
 /**
  * @return {boolean}
  */
 mvc.Model.prototype.isNew = function() {
     return !this.get('id');
-}
+};
 
 /**
  * @param {mvc.model.Schema} schema
  */
 mvc.Model.prototype.setSchema = function(schema) {
     this.schema_ = schema;
-}
+};
 
 /**
  * @param {string} key
@@ -115,7 +122,7 @@ mvc.Model.prototype.has = function(key) {
  * set either a map of key values or a key value
  *
  * @param {Object|string} key object of key value pairs to set, or the key
- * @param {Object=} val to use if the key is a string
+ * @param {*=} val to use if the key is a string
  * @param {boolean=} silent true if no change event should be fired
  * @return {boolean}
  */
@@ -130,7 +137,7 @@ mvc.Model.prototype.set = function(key, val, silent) {
         this.prev_ = goog.object.clone(this.attr_);
     }
     goog.object.forEach(key, function(val, key) {
-        if(!this.schema_ || val == undefined) {
+        if(!this.schema_ || !goog.isDef(val)) {
             this.attr_[key] = val;
         } else {
             var validate = this.schema_.validate(key, val);
@@ -196,7 +203,7 @@ mvc.Model.prototype.meta = function(attr, require, fn) {
             return this.get(val);
         }, this));
     }, this)};
-}
+};
 
 /**
  * @param {string} key
@@ -222,6 +229,10 @@ mvc.Model.prototype.change = function() {
  */
 mvc.Model.prototype.prev = function(key) {
     return goog.object.get(this.prev_, key, null);
+};
+
+mvc.Model.prototype.change = function() {
+    this.dispatchEvent(goog.events.EventType.CHANGE);
 };
 
 /**
@@ -263,7 +274,7 @@ mvc.Model.prototype.dispose = function() {
     this.sync_.del(this);
     this.dispatchEvent(goog.events.EventType.UNLOAD);
     this.disposeInternal();
-}
+};
 
 /**
  * reads an object fomr an external source using sync
@@ -276,7 +287,7 @@ mvc.Model.prototype.fetch = function(callback, silent) {
         if(status == 200) {
             this.ext_ = goog.object.clone(data);
             goog.array.forEach(goog.object.getKeys(this.attr_), function(key) {
-                if(!key in data)
+                if(!(key in data))
                     this.unset(key, silent);
             }, this);
             goog.object.forEach(data, function(val, key) {
@@ -303,7 +314,7 @@ mvc.Model.prototype.save = function() {
 
 mvc.Model.prototype.getBinder = function(key) {
     return goog.bind(this.set, this, key);
-}
+};
 
 /**
  * Allows easy binding of a model's attributre to an element or a function.
@@ -315,15 +326,13 @@ mvc.Model.prototype.getBinder = function(key) {
  * if no name is passed (null or undefined) then the operation will be run on
  * any change to the model and pass in the model
  *
- * @param {string|Array.<string>} name
+ * @param {?string} name
  * @param {Function|*} el
  * @param {Function|*=} fn
  */
 mvc.Model.prototype.bind = function(name, el, fn) {
     goog.events.listen(this, goog.events.EventType.CHANGE, function(e) {
         var changes = e.target.getChanges();
-        if(goog.isString(name))
-            name = [name];
         if(name in changes || !goog.isDefAndNotNull(name)) {
             if(goog.isFunction(el)) {
                 goog.bind(el, /** @type {Function} */(fn))(changes[name], this);

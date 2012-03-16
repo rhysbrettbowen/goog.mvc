@@ -40,9 +40,9 @@ mvc.Router.prototype.navigate = function(fragment) {
  */
 mvc.Router.prototype.route = function(route, fn) {
     if(goog.isString(route))
-        route = new RegExp('^' + goog.string.regExpEscape(route).replace(/:\w+/g, '(\w+)').replace(/\*\w+/g, '(.*?)') + '$');
+        route = new RegExp('^' + goog.string.regExpEscape(route).replace(/\\:\w+/g, '(\\w+)').replace(/\\\*/g, '(.*)').replace(/\\\[/g,"(").replace(/\\\]/g,")?") + '$');
     this.routes_.push({route: route, callback: fn});
-}
+};
 
 /**
  * @private
@@ -53,6 +53,6 @@ mvc.Router.prototype.onChange_ = function(e) {
         var args = route.route.exec(fragment);
         if(!args)
             return;
-        route.callback.call(this, args);
+        route.callback.apply(this, args);
     }, this);
 };

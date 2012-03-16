@@ -19,8 +19,11 @@ goog.require('goog.ui.Component');
  * @extends {goog.ui.Component}
  */
 mvc.Control = function(model) {
+    goog.base(this);
     this.setModel(model);
 };
+goog.inherits(mvc.Control, goog.ui.Component);
+
 
 /**
  * Functions that can be passed to the mvc.Model.bind
@@ -33,7 +36,6 @@ mvc.Control.Fn = {
     CLASS: goog.dom.classes.add
 };
 
-goog.inherits(mvc.Control, goog.ui.Component);
 
 // backbone.js views are just like goog.ui.component, this is more of an interface
 
@@ -45,7 +47,7 @@ mvc.Control.prototype.remove = function() {
     this.dispose();
 };
 
-mvc.Control.prototype.render = function(parent) {
+mvc.Control.prototype.show = function(parent) {
     this.decorate(parent);
     return this;
 };
@@ -56,9 +58,6 @@ mvc.Control.prototype.createDom = function() {
     this.setElementInternal(goog.dom.createDom("DIV"));
 };
 
-mvc.Control.prototype.enterDocument = function() {
-    this.init();
-};
 
 /**
  * pass an object where the key is "eventType .className" and the value is the
@@ -71,7 +70,7 @@ mvc.Control.prototype.enterDocument = function() {
  */
 mvc.Control.prototype.delegateEvents = function(events) {
     goog.object.forEach(events, function(val, key) {
-        goog.events.listen(this.getElement(), key.replace(/\s.*/,''), function(e) {
+        this.getHandler().listen(this.getElement(), key.replace(/\s.*/,''), function(e) {
             if(goog.dom.classes.has(e.target, key.replace(/.*\./,'')))
                 events[key](e);
         }, false, this);

@@ -115,6 +115,15 @@ you can then register your object with the mediator and the messages that you ma
 
 ### changelog ###
 
+#### v0.8 ####
+
+- lots of fixes
+- can reset models
+- passes JSHint
+- routes can have square brackets for optional components
+- change function to fire change events on mvc.Model
+- ajax sync now has urlifyString
+
 #### v0.7 ###
 
 - add in mvc.Mediator

@@ -12,7 +12,7 @@ goog.require('goog.Uri.QueryData');
  */
 mvc.AjaxSync = function(url) {
     
-    var baseFunction = function(model){return ""};
+    var baseFunction = function(model){return "";};
     
     this.baseUrls_ = {
         create: baseFunction,
@@ -29,16 +29,30 @@ mvc.AjaxSync = function(url) {
             del: url
         };
     }
-    goog.object.extend(this.baseUrls_, goog.object.map(url, function(val) {
-        if(goog.isString(val))
-            return function(model) {
-                return val.replace(/:(\w+)/g, function(id) {
-                    return model.get(id);
-            });};
-        return val;
-    }));
+    goog.object.extend(this.baseUrls_, goog.object.map(url, this.urlifyString));
     this.xhr_ = new goog.net.XhrManager();
     this.sendCount_ = 0;
+};
+
+/**
+ * takes a string defining a url where :attribute will return that models
+ * attribute. e.g.
+ * 
+ * var obj = new mvc.Model({attrs:{'id': 'fred'}});
+ * var urlGen = urlifyString("/object=:id/blah");
+ * urlGen(obj); // returns "/object=fred/blah"
+ * 
+ *
+ * @param {string} val
+ * @return {function(mvc.Model):string}
+ */
+mvc.AjaxSync.prototype.urlifyString = function(val) {
+    if(goog.isString(val))
+        return function(model) {
+            return val.replace(/:(\w+)/g, function(id) {
+                return model.get(id.substring(1));
+        });};
+    return /** @type {function(mvc.Model):string} */(val);
 };
 
 /**
@@ -47,7 +61,8 @@ mvc.AjaxSync = function(url) {
 mvc.AjaxSync.prototype.create = function(model, callback) {
     
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.create(model),
-        "POST", goog.Uri.QueryData.createFromMap(model.toJson()).toString(), undefined,  undefined,
+        "POST", goog.Uri.QueryData.createFromMap(model.toJson()).toString(),
+        undefined,  undefined,
         goog.bind(this.onCreateComplete_, this, model, callback));
 };
 
@@ -65,7 +80,8 @@ mvc.AjaxSync.prototype.read = function(model, callback) {
  */
 mvc.AjaxSync.prototype.update = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.update(model),
-        "PUT", goog.Uri.QueryData.createFromMap(model.toJson()).toString(), undefined, undefined,
+        "PUT", goog.Uri.QueryData.createFromMap(model.toJson()).toString(),
+        undefined, undefined,
         goog.bind(this.onUpdateComplete_, this, model, callback));
 };
 

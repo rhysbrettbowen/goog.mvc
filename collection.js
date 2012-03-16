@@ -112,7 +112,7 @@ mvc.Collection.prototype.getLength = function() {
 mvc.Collection.prototype.sort = function(silent) {
     var changeOrder = false;
     if(this.comparator_) {
-        var comp = this.comparator_
+        var comp = this.comparator_;
         this.models_.sort(function(a, b) {
             var ret = comp(a, b);
             if(ret < 0)
@@ -143,7 +143,7 @@ mvc.Collection.prototype.add = function(model, ind, silent) {
         goog.events.listen(model, goog.events.EventType.UNLOAD, 
             function(e){
                 goog.array.remove(this.models_, e.target);
-                this.sort()
+                this.sort();
             }, false, this);
         this.sort(true);
         if(!silent)
@@ -192,7 +192,7 @@ mvc.Collection.prototype.getById = function(id) {
     return /** @type {mvc.Model} */(goog.array.find(this.models_, function(model) {
         return model.get('id') == id;
     }));
-}
+};
 
 /**
  * get all the models, optionally filter by function
@@ -218,4 +218,4 @@ mvc.Collection.prototype.at = function(index) {
 
 mvc.Collection.prototype.clear = function() {
     this.models_ = [];
-}
+};

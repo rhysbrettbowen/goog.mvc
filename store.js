@@ -13,7 +13,7 @@ goog.require('goog.object');
 
 /**
  * @constructor
- * @param {function(new:mvc.Model,...*)} opt_defaultModel
+ * @param {function(new:mvc.Model)=} opt_defaultModel
  */
 mvc.Store = function(opt_defaultModel) {
     this.cache_ = {};
@@ -25,15 +25,16 @@ mvc.Store = function(opt_defaultModel) {
  * and the type of model to create if none found in cache
  *
  * @param {string=} input the model's id
- * @param {function(new:mvc.Model,...*)=} the type of model to create
+ * @param {function(new:mvc.Model)=} opt_model type of model to create
+ * @return {mvc.Model}
  */
 mvc.Store.prototype.get = function(input, opt_model) {
     if(this.cache_[input])
         return this.cache_[input];
     var modelConstructor = opt_model || this.default_;
-    var model = new mod();
+    var model = new modelConstructor();
     if(input)
-        ret.set('id', input);
+        model.set('id', input, true);
     this.cache_[input || model.cid_] = model;
     var list = goog.events.listen(model, goog.events.EventType.CHANGE,
         function() {
@@ -44,6 +45,7 @@ mvc.Store.prototype.get = function(input, opt_model) {
                 goog.events.unlistenByKey(list);
             }
         }, false, this);
+    return model;
 };
 
 /**
