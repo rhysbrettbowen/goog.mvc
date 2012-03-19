@@ -47,7 +47,7 @@ mvc.Router.prototype.route = function(route, fn) {
 /**
  * @private
  */
-mvc.Router.prototype.onChange_ = function(e) {
+mvc.Router.prototype.onChange_ = function() {
     var fragment = this.history_.getToken();
     goog.array.forEach(this.routes_ || [], function(route) {
         var args = route.route.exec(fragment);

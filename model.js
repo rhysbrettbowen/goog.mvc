@@ -30,11 +30,11 @@ mvc.Model = function(options) {
     
     if(!options)
         options = {};
-    options.attr = options.attr || {};
+    options['attr'] = options['attr'] || {};
     
     goog.object.forEach(options, function(val, key) {
         if(!goog.isDef(defaults[key]))
-            defaults.attr[key] = val;
+            defaults['attr'][key] = val;
     });
 
     goog.object.extend(defaults, options);
@@ -58,9 +58,9 @@ mvc.Model = function(options) {
      * @private
      * @type {?mvc.model.Schema}
      */
-    this.schema_ = defaults.schema || null;
+    this.schema_ = defaults['schema'] || null;
     
-    this.sync_ = defaults.sync|| null;
+    this.sync_ = defaults['sync'] || null;
     
     this.bound_ = [];
     this.boundAll_ = {};
@@ -70,7 +70,7 @@ mvc.Model = function(options) {
     
     this.cid_ = goog.getUid(this);
     
-    goog.object.forEach(defaults.attr, function(val, name) {
+    goog.object.forEach(defaults['attr'], function(val, name) {
         this.attr_[name] = val;
     }, this);
     
@@ -147,9 +147,6 @@ mvc.Model.prototype.set = function(key, val, silent) {
         temp[key] = val;
         key = temp;
     }
-    if(!silent) {
-        this.prev_ = goog.object.clone(this.attr_);
-    }
     goog.object.forEach(key, function(val, key) {
         if(!this.schema_ || !goog.isDef(val)) {
             this.attr_[key] = val;
@@ -164,6 +161,7 @@ mvc.Model.prototype.set = function(key, val, silent) {
     if(success) {
         if(!silent) {
             this.dispatchEvent(goog.events.EventType.CHANGE);
+            this.prev_ = goog.object.clone(this.attr_);
         }
         return true;
     }
@@ -328,14 +326,14 @@ mvc.Model.prototype.getBinder = function(key) {
 
 mvc.Model.prototype.change_ = function(e) {
     var changes = this.getChanges();
-    goog.object.forEach(this.bound_, function(val, key) {
+    goog.array.forEach(this.bound_, function(val) {
         if(goog.array.some(val.attr, function(attr) {
-            return !!changes[attr];
+            return goog.array.contains(changes, attr);
         })) {
             val.fn.apply(val.hn, goog.array.concat(goog.array.map(val.attr,
                 function(attr) {
                     return this.get(attr);
-                }),[this]));
+                },this)));
         }
     }, this);
     goog.object.forEach(this.boundAll_, function(val) {

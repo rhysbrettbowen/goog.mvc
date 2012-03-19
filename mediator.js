@@ -20,8 +20,6 @@ mvc.Mediator = function() {
     this.listeners_ = {};
 };
 
-goog.addSingletonGetter(mvc.Mediator);
-
 
 /**
  * @param {Object} obj
@@ -87,6 +85,22 @@ mvc.Mediator.prototype.on = function(message, handler) {
     }
     goog.array.insert(this.listeners_[message], handler);
     return goog.getUid(handler);
+};
+
+/**
+ * this will only run the function the first time the message is given
+ *
+ * @param {string} message
+ * @param {Function} handler
+ */
+mvc.Mediator.prototype.once = function(message, handler) {
+    var uid;
+    var fn = goog.bind(function() {
+        handler.apply(this, Array.prototype.slice.call(arguments,0));
+        this.off(uid);
+    },this);
+    uid = this.on(message, fn);
+    return uid;
 };
 
 /**

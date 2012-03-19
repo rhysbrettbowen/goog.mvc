@@ -208,6 +208,7 @@ you can then register your object with the mediator and the messages that you ma
 #### v0.9 ####
 
 - reworked bind for performance
+- mediator now has once method
 
 #### v0.8 ####
 

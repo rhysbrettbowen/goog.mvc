@@ -20,20 +20,18 @@ goog.require('goog.events.EventTarget');
  * @param {Object=} options
  */
 mvc.Collection = function(options) {
-    goog.base(this, options);
-    
     var defaults = {
-        sync: null,
-        comparator: null,
-        modelType: mvc.Model,
-        models: [],
-        schema: null
+        'comparator': options['comparator']||null,
+        'modelType': options['modelType']||mvc.Model,
+        'models': options['models']||[]
     };
+    goog.object.remove(options,'comparator');
+    goog.object.remove(options,'modelType');
+    goog.object.remove(options,'models');
+
+    goog.base(this, options);
+
     
-    if(options)
-        goog.object.extend(defaults, options);
-    
-    this.sync_ = defaults.sync;
     /**
      * @private
      * @type {Array.<mvc.Model>}
@@ -43,14 +41,14 @@ mvc.Collection = function(options) {
      * @private
      * @type {?function(mvc.Model, mvc.Model):number}
      */
-    this.comparator_ = defaults.comparator;
+    this.comparator_ = defaults['comparator'];
     
     /**
      * @private
      */
-    this.modelType_ = defaults.modelType;
+    this.modelType_ = defaults['modelType'];
     
-    goog.array.forEach(defaults.models, function(model) {
+    goog.array.forEach(defaults['models'], function(model) {
         this.add(model, undefined, true);
     }, this);
 };
