@@ -22,6 +22,8 @@ mvc.Mediator = function() {
 
 
 /**
+ * lets components know that a message can be fired by an object.
+ *
  * @param {Object} obj
  * @param {Array.<string>} messages
  */
@@ -43,6 +45,8 @@ mvc.Mediator.prototype.register = function(obj, messages) {
 };
 
 /**
+ * removes the object from the register for that message
+ *
  * @param {Object} obj
  * @param {Array.<string>=} opt_messages
  */
@@ -73,10 +77,16 @@ mvc.Mediator.prototype.unregister = function(obj, opt_messages) {
  * a message is no longer supported. Returns a uid that can be used with
  * off to remove the listener
  *
- * @param {string} message
+ * @param {string|Array.<string>} message
  * @param {Object|Function} handler
  */
 mvc.Mediator.prototype.on = function(message, handler) {
+    if(goog.isArrayLike(message)) {
+        goog.array.forEach(/** @type {Array} */(message), function(mess) {
+            this.on(mess, handler);
+        }, this);
+        return null;
+    }
     this.listeners_[message] = this.listeners_[message] || [];
     if(!this.listeners_[message].length) {
         if(handler.init && this.available_[message]) {
@@ -104,6 +114,8 @@ mvc.Mediator.prototype.once = function(message, handler) {
 };
 
 /**
+ * remove the listener by it's id
+ *
  * @param {number} uid
  */
 mvc.Mediator.prototype.off = function(uid) {
@@ -115,6 +127,8 @@ mvc.Mediator.prototype.off = function(uid) {
 };
 
 /**
+ * check to see if anyone is listening for a message
+ *
  * @param {string} message
  * @return {boolean}
  */
@@ -123,6 +137,8 @@ mvc.Mediator.prototype.isListened = function(message) {
 };
 
 /**
+ * broadcast the message to the listeners
+ *
  * @param {string} message
  * @param {*=} opt_args
  */
@@ -138,6 +154,9 @@ mvc.Mediator.prototype.broadcast = function(message, opt_args) {
     });
 };
 
+/**
+ * reset the mediator to it's original state
+ */
 mvc.Mediator.prototype.reset = function() {
     this.available_ = {};
     goog.object.forEach(this.listeners_, function(listener) {

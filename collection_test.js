@@ -14,7 +14,7 @@ var setUp = function() {
 };
 
 var testUnsortedCollection = function() {
-    var test = new mvc.Collection([model1, model2, model3]);
+    var test = new mvc.Collection({'models':[model1, model2, model3]});
     assertEquals('first object should be mock 1', test.at(0), model1);
     assertEquals('second object should be mock 2', test.at(1), model2);
     assertEquals('third object should be mock 3', test.at(2), model3);
@@ -37,7 +37,7 @@ var testSortedCollection = function() {
 
 var testNewSortedCollection = function() {
     var sort = function(a, b) {return a.get('sort')-b.get('sort');};
-    var test = new mvc.Collection([model1,model2,model3]);
+    var test = new mvc.Collection({'models':[model1,model2,model3]});
     test.setComparator(sort);
     assertEquals('first object should be mock 2', test.at(0), model2);
     assertEquals('second object should be mock 3', test.at(1), model3);
@@ -48,4 +48,4 @@ var testAsModel = function() {
     var test = new mvc.Collection();
     test.set('a', 1);
     assertEquals('should have attribute a as 1', test.get('a'), 1);
-}
+};

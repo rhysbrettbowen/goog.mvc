@@ -111,10 +111,27 @@ There are also other functions that can take parameters such as the boolean "sil
 - fetch(callback, silent): updates the model using it's sync
 - save: tells the sync to create/update
 
+You can also set a schema for a model. A schema is an object which has a set of keys for which you want getters and setters. Under the key you can put an object with the keys of get, set and require. The get function works much like the meta function above (in fact the meta function is just a nice way to add things to the schema). The function will accept in the values for any attributes you put in the require array. The set function will take the value and should return the data to get set on the model. You can also throw errors to stop the value saving and fire the models handleErr_ function which you should set. an example of a schema:
 
-## mvc.model.Schema ##
+```javascript
+{
+    'firstname': {
+        set: function(name) {
+            if(name.length > 64)
+                throw new Error("name is too long");
+            return goog.string.trim(name);
+        }
+    },
+    'fullName': {
+        get: function(first, last) {
+            return last + ", " + first;
+        },
+        require: ['firstname','lastname']
+    }
+}
+```
 
-A schema can be set for a model. The schema takes in an object or map of keys and functions. The functions take in a value, throw an error if the data is invalid and should return the value to be set in the model. In this way the schema can also act as a setter, doing all the formatting and checking. When a schema is passed in to a model, the model will use this to validate any values trying to be set, and won't add in data if a function throws an error. You can also pass in the following strings to check for the type of input: "number", "string", "array"
+the require should be put in for any user defined attributes as the model goes up the require chain to decide when to fire a change event on these attributes.
 
 ## mvc.Collection ##
 
@@ -168,7 +185,7 @@ There is also a set of functions under mvc.Control.Fn that can be passed to mvc.
 ## mvc.Sync ##
 
 This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.AjaxSync and mvc.LocalSync. The purpose of sync is to be the glue between the model and the dataStore.
-                                                           
+
 
 ## mvc.Router ##
 
@@ -208,7 +225,8 @@ you can then register your object with the mediator and the messages that you ma
 #### v0.9 ####
 
 - reworked bind for performance
-- mediator now has once method
+- schema is now an object
+- more tests
 
 #### v0.8 ####
 

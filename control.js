@@ -21,6 +21,10 @@ goog.require('goog.ui.Component');
 mvc.Control = function(model) {
     goog.base(this);
     this.setModel(model);
+    this.eventHolder_ = {
+        listeners: {},
+        handlers: {}
+    };
 };
 goog.inherits(mvc.Control, goog.ui.Component);
 
@@ -47,34 +51,106 @@ mvc.Control.prototype.remove = function() {
     this.dispose();
 };
 
-mvc.Control.prototype.show = function(parent) {
-    this.decorate(parent);
-    return this;
-};
-
-mvc.Control.prototype.init = goog.abstractMethod;
-
+/**
+ * should be overriden. Creates a div for the component
+ */
 mvc.Control.prototype.createDom = function() {
-    this.setElementInternal(goog.dom.createDom("DIV"));
+    //this.setElementInternal();
 };
 
 
 /**
- * pass an object where the key is "eventType .className" and the value is the
- * event handler function
- * example:
- * var events = {}
- * goog.object.set(events, goog.events.EventType.CLICK+" ."+goog.getCssName('button'), function(e) {alert("hello");});
+ * Internal use. Handles and delegates events
  *
- * @param {Object.<string, Function>} events
+ * @private
+ * @param {string} type
+ * @param {Event} e
  */
-mvc.Control.prototype.delegateEvents = function(events) {
-    goog.object.forEach(events, function(val, key) {
-        this.getHandler().listen(this.getElement(), key.replace(/\s.*/,''), function(e) {
-            if(goog.dom.classes.has(e.target, key.replace(/.*\./,'')))
-                events[key](e);
-        }, false, this);
-    }, this);
+mvc.Control.prototype.handleEvents_ = function(type, e) {
+    if(!this.eventHolder_.handlers[type])
+        return;
+    goog.array.forEach(this.eventHolder_.handlers[type], function(handler) {
+        if(!handler.selectors.length ||
+            goog.array.some(handler.selectors, function(className) {
+                return goog.dom.classes.has(/** @type {!Node} */(e.target), className);
+            })) {
+            goog.bind(handler.fn, handler.handler)(e);
+        }
+    });
+};
+
+
+/**
+ * delegating events. An event type is needed as well as a handling function.
+ * if a third parameter is passed then elements with that class will be listened
+ * to, otherwise the whole component. Returns a uid that can be used to end
+ * the listener with the off method
+ *
+ * @param {string} eventName
+ * @param {Function} fn
+ * @param {string|Array.<string>=} className
+ * @param {*=} opt_handler
+ */
+mvc.Control.prototype.on = function(eventName, fn, className, opt_handler) {
+    if(!this.eventHolder_.handlers[eventName])
+        this.eventHolder_.handlers[eventName] = [];
+    if(!this.eventHolder_.listeners[eventName])
+        this.eventHolder_.listeners[eventName] = this.getHandler().listen(
+            this.getElement(), eventName,
+            goog.bind(this.handleEvents_, this, eventName));
+    if(!goog.isDef(className))
+        className = [];
+    var obj = {
+        selectors: (goog.isArray(className)?className:[className]),
+        fn: fn,
+        uid: null,
+        handler: (opt_handler || this)
+        };
+    obj.uid = goog.getUid(obj);
+    this.eventHolder_.handlers[eventName].push(obj);
+    return obj.uid;
+};
+
+/**
+ * same as on, but will only fire once
+ *
+ * @param {string} eventName
+ * @param {Function} fn
+ * @param {string|Array.<string>=} className
+ * @param {*=} opt_handler
+ */
+mvc.Control.prototype.once = function(eventName, fn, className, opt_handler) {
+    var uid;
+    var onceFn = function() {
+        fn.apply(/** @type {Object} */(opt_handler||this), Array.prototype.slice.call(arguments));
+        this.off(uid);
+    };
+    uid = this.on(eventName, onceFn, className);
+    return uid;
+};
+
+/**
+ * same as on but assumes the event type is a click
+ *
+ * @param {Function} fn
+ * @param {string|Array.<string>=} className
+ * @param {*=} opt_handler
+ */
+mvc.Control.prototype.click = function(fn, className, opt_handler) {
+    return this.on(goog.events.EventType.CLICK, fn, className, opt_handler);
+};
+
+/**
+ * take off a lister by it's id'
+ *
+ * @param {string} uid
+ */
+mvc.Control.prototype.off = function(uid) {
+    goog.object.forEach(this.eventHolder_.handlers, function(val, key) {
+        goog.array.removeIf(val, function(handler) {
+            return handler.uid == uid;
+        });
+    });
 };
 
 /**

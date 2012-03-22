@@ -51,9 +51,14 @@ mvc.Store.prototype.get = function(input, opt_model) {
 /**
  * this is used to setup the store from cache
  *
- * @param {Object} obj
+ * @param {mvc.Model|Array.<mvc.Model>} models
  */
-mvc.Store.prototype.set = function(obj) {
-    goog.object.extend(this.cache_, obj);
+mvc.Store.prototype.set = function(models) {
+    if(!goog.isArrayLike(models)) {
+        models = [models];
+    }
+    goog.array.forEach(/** @type {Array} */(models), function(model) {
+        this.cache_[model.get('id') || model.getCid()] = model;
+    }, this);
 };
 

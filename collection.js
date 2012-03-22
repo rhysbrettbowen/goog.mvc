@@ -13,13 +13,14 @@ goog.require('goog.events.EventTarget');
 
 
 /**
- * A collection of models
+ * A collection of models. Extends model so it has it's own values
  *
  * @constructor
- * @extends mvc.Model
+ * @extends {mvc.Model}
  * @param {Object=} options
  */
 mvc.Collection = function(options) {
+    options = options||{};
     var defaults = {
         'comparator': options['comparator']||null,
         'modelType': options['modelType']||mvc.Model,
@@ -31,7 +32,7 @@ mvc.Collection = function(options) {
 
     goog.base(this, options);
 
-    
+
     /**
      * @private
      * @type {Array.<mvc.Model>}
@@ -42,28 +43,22 @@ mvc.Collection = function(options) {
      * @type {?function(mvc.Model, mvc.Model):number}
      */
     this.comparator_ = defaults['comparator'];
-    
+
     /**
      * @private
      */
     this.modelType_ = defaults['modelType'];
-    
+
     goog.array.forEach(defaults['models'], function(model) {
         this.add(model, undefined, true);
     }, this);
 };
 goog.inherits(mvc.Collection, mvc.Model);
 
-
 /**
- * @return {Array}
- */
-mvc.Collection.prototype.toArray = function() {
-    return this.models_;
-};
-
-/**
- * plucks an attribute from each model and returns as an array
+ * plucks an attribute from each model and returns as an array. If you pass
+ * an array of keys then the array will contain a map of each key and it's
+ * value
  *
  * @param {string|Array} key
  * @return {Array.<Object.<string, *>>|Array.<*>}
@@ -82,12 +77,8 @@ mvc.Collection.prototype.pluck = function(key) {
 };
 
 /**
- * @return {Array}
- */
- 
-
-/**
- * function to sort models by
+ * function to sort models by. Function should take two models and 
+ * return -1, 0 or 1. Also takes whether to fire a change event after sorting
  *
  * @param {function(mvc.Model, mvc.Model):number} fn
  * @param {boolean=} silent
@@ -98,6 +89,8 @@ mvc.Collection.prototype.setComparator = function(fn, silent) {
 };
 
 /**
+ * returns the number of models in the collection
+ *
  * @return {number}
  */
 mvc.Collection.prototype.getLength = function() {
@@ -105,6 +98,8 @@ mvc.Collection.prototype.getLength = function() {
 };
 
 /**
+ * tells the collection to sort it's models. This is used internally
+ *
  * @param {boolean=} silent
  */
 mvc.Collection.prototype.sort = function(silent) {
@@ -123,6 +118,9 @@ mvc.Collection.prototype.sort = function(silent) {
 };
 
 /**
+ * accepts a model or array of models and adds them at the end unless an index
+ * to insert is given.
+ *
  * @param {mvc.Model|Array.<mvc.Model>} model
  * @param {number=} ind
  * @param {boolean=} silent
@@ -151,17 +149,21 @@ mvc.Collection.prototype.add = function(model, ind, silent) {
 };
 
 /**
- * @param {Object=} attr
+ * add a new model with the given options. The type of model is given by the
+ * modelType of the collection
+ *
+ * @param {Object=} options
  * @param {boolean=} silent
  */
-mvc.Collection.prototype.newModel = function(attr, silent) {
-    var model = new this.modelType_();
-    model.set(attr || null);
+mvc.Collection.prototype.newModel = function(options, silent) {
+    var model = new this.modelType_(options);
     this.add(model, 0, silent);
     return model;
 };
 
 /**
+ * remove the given model from the collection
+ *
  * @param {mvc.Model|Array.<mvc.Model>} model
  * @param {boolean=} silent
  */
@@ -214,6 +216,13 @@ mvc.Collection.prototype.at = function(index) {
     return this.models_[index<0?this.models_.length+index:index];
 };
 
-mvc.Collection.prototype.clear = function() {
+/**
+ * remove all models from the collection
+ *
+ * @param {boolean} silent
+ */
+mvc.Collection.prototype.clear = function(silent) {
     this.models_ = [];
+    if(!silent)
+        this.dispatchEvent(goog.events.EventType.CHANGE);
 };

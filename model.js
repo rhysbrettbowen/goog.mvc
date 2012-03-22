@@ -23,21 +23,24 @@ goog.require('goog.object');
  */
 mvc.Model = function(options) {
     var defaults = {
-        'schema': null,
+        'schema': {},
         'sync': null,
         'attr': {}
     };
-    
+
     if(!options)
         options = {};
     options['attr'] = options['attr'] || {};
-    
+
     goog.object.forEach(options, function(val, key) {
         if(!goog.isDef(defaults[key]))
-            defaults['attr'][key] = val;
+            options['attr'][key] = val;
+    });
+    
+    goog.object.forEach(defaults, function(val, key) {
+        defaults[key] = options[key] || defaults[key];
     });
 
-    goog.object.extend(defaults, options);
 
     /**
      * @private
@@ -56,29 +59,87 @@ mvc.Model = function(options) {
     this.prev_ = {};
     /**
      * @private
-     * @type {?mvc.model.Schema}
+     * @type {Object}
      */
-    this.schema_ = defaults['schema'] || null;
-    
-    this.sync_ = defaults['sync'] || null;
-    
+    this.schema_ = defaults['schema'];
+
+    this.sync_ = defaults['sync'];
+
     this.bound_ = [];
     this.boundAll_ = {};
     
+    this.handleErr_ = goog.nullFunction;
+
     this.changeHandler_ = goog.events.listen(this,
         goog.events.EventType.CHANGE, this.change_, false, this);
+    /**
+     * @private
+     * @type {string}
+     */
+    this.cid_ = ""+goog.getUid(this);
     
-    this.cid_ = goog.getUid(this);
-    
-    goog.object.forEach(defaults['attr'], function(val, name) {
-        this.attr_[name] = val;
-    }, this);
-    
+    this.set(defaults['attr'], true);
+
     this.dispatchEvent(goog.events.EventType.LOAD);
 };
 goog.inherits(mvc.Model, goog.events.EventTarget);
 
+/**
+ * return local id
+ *
+ * @return {string}
+ */
+mvc.Model.prototype.getCid = function() {
+    return this.cid_;
+};
 
+/**
+ * used internally to parse strings and regexes in to functions
+ *
+ * @param {*} fn
+ */
+mvc.Model.prototype.parseSchemaFn_ = function(fn) {
+    var val = fn;
+    if(goog.isString(fn)) {
+        var fns = {
+            'number': goog.isNumber,
+            'string': goog.isString,
+            'array': goog.isArrayLike
+        };
+        val = function(val) {
+            if(!fns[fn.toLowerCase])
+                throw new Error(fn);
+            return val;
+        };
+    }else if(val.exec) {
+        val = goog.bind(function(regex, value, mod) {
+            if(goog.isNull(regex.exec(value)))
+                throw new Error();
+            return val;}, this, fn);
+    } else if(goog.isFunction(val) && goog.object.getKeys(val.prototype).length){
+        val = function(val) {
+            if(val.constructor == fn)
+                return val;
+            while(val.superClass_) {
+                val = val.superClass_.constructor;
+                if(val == fn)
+                    return val;
+            }
+            throw new Error();
+        };
+    }
+    return val;
+};
+
+/**
+ * creates a new mvc.Model
+ *
+ * @param {Object=} options
+ * @return {mvc.Model}
+ */
+mvc.Model.create = function(options) {
+    return new mvc.Model(options);
+};
 
 /**
  * returns full copy of the attributes
@@ -89,10 +150,20 @@ mvc.Model.prototype.toJson = function() {
     return goog.object.clone(this.attr_);
 };
 
+/**
+ * sets the sync for the model
+ *
+ * @param {mvc.Sync} sync
+ */
 mvc.Model.prototype.setSync = function(sync) {
     this.sync_ = sync;
 };
 
+/**
+ * removes all attributes
+ *
+ * @param {boolean} silent
+ */
 mvc.Model.prototype.reset = function(silent) {
     this.prev_ = this.attr_;
     this.attr_ = {};
@@ -101,16 +172,26 @@ mvc.Model.prototype.reset = function(silent) {
 };
 
 /**
+ * gets the value for an attribute
+ *
  * @param {string} key
  * @return {*}
  */
 mvc.Model.prototype.get = function(key) {
-    if(this.formats_[key])
-        return this.formats_[key].fn();
-    return goog.object.get(this.attr_, key, null);
+    if(this.schema_[key] && this.schema_[key].get) {
+        return this.schema_[key].get.apply(this, goog.array.map(
+            this.schema_[key].require || [], function(requireKey) {
+                if(requireKey === key)
+                    return this.attr_[key];
+                return this.get(requireKey);
+            },this));
+    }
+    return this.attr_[key];
 };
 
 /**
+ * returns whether an ID has been set by the server
+ *
  * @return {boolean}
  */
 mvc.Model.prototype.isNew = function() {
@@ -118,10 +199,21 @@ mvc.Model.prototype.isNew = function() {
 };
 
 /**
- * @param {mvc.model.Schema} schema
+ * sets the schema
+ *
+ * @param {Object} schema
  */
 mvc.Model.prototype.setSchema = function(schema) {
     this.schema_ = schema;
+};
+
+/**
+ * adds more rules to the schema
+ *
+ * @param {Object} schema
+ */
+mvc.Model.prototype.addSchemaRules = function(schema) {
+    goog.object.extend(this.schema_, schema);
 };
 
 /**
@@ -136,85 +228,46 @@ mvc.Model.prototype.has = function(key) {
  * set either a map of key values or a key value
  *
  * @param {Object|string} key object of key value pairs to set, or the key
- * @param {*=} val to use if the key is a string
+ * @param {*=} val to use if the key is a string, or if key is an object then
+ * a boolean for silent
  * @param {boolean=} silent true if no change event should be fired
  * @return {boolean}
  */
 mvc.Model.prototype.set = function(key, val, silent) {
-    var success = true;
+    var success = false;
     if(goog.isString(key)) {
         var temp = {};
         temp[key] = val;
         key = temp;
+    } else {
+        silent = /** @type {boolean} */(val);
     }
     goog.object.forEach(key, function(val, key) {
         if(!this.schema_ || !goog.isDef(val)) {
             this.attr_[key] = val;
         } else {
-            var validate = this.schema_.validate(key, val);
-            if(goog.isDef(validate))
-                this.attr_[key] = validate;
-            else
-                success = false;
+            try {
+                if(this.schema_[key] && this.schema_[key].set)
+                    this.attr_[key] = this.parseSchemaFn_(this.schema_[key].set)(val, this);
+                else
+                    this.attr_[key] = val;
+                success = true;
+            } catch (err) {
+                this.handleErr_(err);
+            }
         }
     }, this);
     if(success) {
         if(!silent) {
             this.dispatchEvent(goog.events.EventType.CHANGE);
             this.prev_ = goog.object.clone(this.attr_);
+            this.attr_ = goog.object.filter(this.attr_, function(val, key) {
+                return goog.isDef(val);
+            });
         }
         return true;
     }
     return false;
-};
-
-/**
- * Can be used to create an alias, e.g:
- * model.alias('surname', 'lastName');
- *
- * @param {string} newName
- * @param {string} oldName
- */
-mvc.Model.prototype.alias = function(newName, oldName)  {
-    this.formats_[newName] = {attr: [oldName],
-        fn: goog.bind(function() {
-            return this.get(oldName);
-        }, this)};
-};
-
-/**
- * Can be used to change format returned when using get, e.g:
- * model.format('date', function(date) {return date.toDateString();});
- *
- * @param {string} attr
- * @param {Function} fn
- */
-mvc.Model.prototype.format = function(attr, fn)  {
-    this.formats_[attr] = {attr: [attr],
-        fn: goog.bind(function() {
-            return /** @type {Function} */(fn)(this.attr_[attr], this);
-        }, this)};
-};
-
-/**
- * Can be used to make an attribute out of other attributes. This can be bound
- * and will fire whenever a change is made to the required attributes e.g.
- * model.meta('fullName', ['firstName', 'lastName'],
- *     function(firstName, lastName){
- *         return firstName + " " + lastName;
- *     });
- *
- * @param {string} attr
- * @param {Array.<string>} require
- * @param {Function} fn
- */
-mvc.Model.prototype.meta = function(attr, require, fn) {
-    this.formats_[attr] = {attr: require,
-        fn: goog.bind(function() {
-        return fn.apply(this, goog.array.map(/** @type {Array} */(require), function(val) {
-            return this.get(val);
-        }, this));
-    }, this)};
 };
 
 /**
@@ -244,17 +297,79 @@ mvc.Model.prototype.prev = function(key) {
 };
 
 /**
+ * Can be used to create an alias, e.g:
+ * model.alias('surname', 'lastName');
+ *
+ * @param {string} newName
+ * @param {string} oldName
+ */
+mvc.Model.prototype.alias = function(newName, oldName)  {
+    if(!this.schema_[newName])
+        this.schema_[newName] = {};
+    this.schema_[newName].get = function(oldName) {
+        return oldName;
+    };
+    this.schema_[newName].require = [oldName];
+};
+
+/**
+ * Can be used to change format returned when using get, e.g:
+ * model.format('date', function(date) {return date.toDateString();});
+ *
+ * @param {string} attr
+ * @param {Function} fn
+ */
+mvc.Model.prototype.format = function(attr, fn)  {
+    if(!this.schema_[attr])
+        this.schema_[attr] = {};
+    this.schema_[attr].get = fn;
+    this.schema_[attr].require = [attr];
+};
+
+/**
+ * Can be used to make an attribute out of other attributes. This can be bound
+ * and will fire whenever a change is made to the required attributes e.g.
+ * model.meta('fullName', ['firstName', 'lastName'],
+ *     function(firstName, lastName){
+ *         return firstName + " " + lastName;
+ *     });
+ *
+ * @param {string} attr
+ * @param {Array.<string>} require
+ * @param {Function} fn
+ */
+mvc.Model.prototype.meta = function(attr, require, fn) {
+    if(!this.schema_[attr])
+        this.schema_[attr] = {};
+    this.schema_[attr].get = fn;
+    this.schema_[attr].require = require;
+};
+
+/**
  * returns object of changed attributes and their values
  */
 mvc.Model.prototype.getChanges = function() {
-    var ret = goog.object.getKeys(goog.object.filter(this.formats_, function(val) {
-        return goog.array.some(val.attr, function(require) {
-            return this.attr_[require] != this.prev_[require];
+    var schema = this.schema_;
+    var getReq = function(key, req) {
+        if(schema[key] && schema[key].require){
+            goog.array.extend(req, schema[key].require);
+            for(var i = 0; i < schema[key].require.length; i++) {
+                if(schema[key].require[i]!==key)
+                    getReq(schema[key].require[i], req);
+            }
+        }
+    };
+    
+    var ret = goog.object.getKeys(goog.object.filter(this.schema_, function(val) {
+        var requires = [];
+        getReq(val,requires);
+        return goog.array.some(requires, function(require) {
+            return this.attr_[require] !== this.prev_[require];
         }, this);
     }, this));
     goog.array.extend(ret, goog.object.getKeys(goog.object.filter(this.attr_,
         function(val, key) {
-            return val != this.prev_[key];
+            return val !== this.prev_[key];
         }, this)));
     return ret;
 };
@@ -262,9 +377,10 @@ mvc.Model.prototype.getChanges = function() {
 /**
  * reverts an object's values to it's last fetch
  *
+ * @param {boolean=} silent
  * @return {mvc.Model}
  */
-mvc.Model.prototype.revert = function() {
+mvc.Model.prototype.revert = function(silent) {
     var newAttr = {};
     goog.object.extend(newAttr, goog.object.map(this.ext_, function(val) {
         return {val: val, prev: null};
@@ -274,7 +390,8 @@ mvc.Model.prototype.revert = function() {
             newAttr[key].prev = val;
         }
     });
-    this.dispatchEvent(goog.events.EventType.CHANGE);
+    if(!silent)
+        this.dispatchEvent(goog.events.EventType.CHANGE);
     return this;
 };
 
@@ -323,6 +440,7 @@ mvc.Model.prototype.save = function() {
 mvc.Model.prototype.getBinder = function(key) {
     return goog.bind(this.set, this, key);
 };
+
 
 mvc.Model.prototype.change_ = function(e) {
     var changes = this.getChanges();
@@ -392,81 +510,4 @@ mvc.Model.prototype.bindAll = function(fn, opt_handler) {
     return id;
 };
 
-/**
- * Schema saves validation rules against keys
- *
- * @constructor
- */
-mvc.model.Schema = function(rules) {
-    /**
-     * @private
-     * @type {Object.<string, function(*):boolean>}
-     */
-    this.schema_ = {};
-    
-    if(rules)
-        this.set(rules);
-};
 
-/**
- * @typedef {string|function(*, mvc.Model):boolean}
- */
-mvc.model.Schema.Rule;
-
-/**
- * set rule(s) in the schema
- *
- * @param {string | Object.<string, mvc.model.Schema.Rule>} key
- * @param {mvc.model.Schema.Rule=} val
- */
-mvc.model.Schema.prototype.set = function(key, val) {
-    if(goog.isString(key)) {
-        var temp = {};
-        temp[key] = val;
-        key = temp;
-    }
-    goog.object.extend(this.schema_, goog.object.map(key, function(val, key) {
-        if(goog.isString(val)) {
-            if(val.toLowerCase() == 'number') {
-                val = function(val, mod){return goog.isNumber(val);};
-            } else if(val.toLowerCase() == 'string') {
-                val = function(val, mod){return goog.isString(val);};
-            } else if(val.toLowerCase() == 'array') {
-                val = function(val, mod){return goog.isArrayLike(val);};
-            }
-        }
-        if(val.exec) {
-            val = goog.bind(function(regex, value, mod) {return !!regex.exec(value);}, this, val);
-        }
-        return val;
-    }, this));
-};
-
-mvc.model.Schema.Test = function(obj) {
-    return function(val) {
-        if(val.constructor == obj)
-            return true;
-        while(val.superClass_) {
-            val = val.superClass_.constructor;
-            if(val == obj)
-                return true;
-        }
-        return false;
-    };
-};
-
-mvc.model.Schema.prototype.onErr = function(message) {
-    alert(message);
-};
-
-mvc.model.Schema.prototype.validate = function(key, val) {
-    if(key in this.schema_) {
-        try{
-            return this.schema_[key](val);
-        } catch(err) {
-            this.onErr(err.message);
-            return undefined;
-        }
-    }
-    return val;
-};

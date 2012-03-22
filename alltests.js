@@ -13,5 +13,10 @@
 // limitations under the License.
 
 var _allTests = [
-"collection_test.html", "control_test.html", "model_test.html", 'router_test.html'
-]
+    "collection_test.html",
+    "control_test.html",
+    "model_test.html",
+    'router_test.html',
+    'store_test.html',
+    'mediator_test.html'
+];
