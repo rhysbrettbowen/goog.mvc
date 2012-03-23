@@ -67,6 +67,7 @@ mvc.Model = function(options) {
 
     this.bound_ = [];
     this.boundAll_ = {};
+    this.onUnload_ = [];
     
     this.handleErr_ = goog.nullFunction;
 
@@ -360,9 +361,9 @@ mvc.Model.prototype.getChanges = function() {
         }
     };
     
-    var ret = goog.object.getKeys(goog.object.filter(this.schema_, function(val) {
+    var ret = goog.object.getKeys(goog.object.filter(this.schema_, function(val, key) {
         var requires = [];
-        getReq(val,requires);
+        getReq(key,requires);
         return goog.array.some(requires, function(require) {
             return this.attr_[require] !== this.prev_[require];
         }, this);
@@ -398,6 +399,9 @@ mvc.Model.prototype.revert = function(silent) {
 mvc.Model.prototype.dispose = function() {
     this.sync_.del(this);
     this.dispatchEvent(goog.events.EventType.UNLOAD);
+    goog.array.forEach(this.onUnload_, function(fn) {
+        fn(this);
+    }, this);
     this.disposeInternal();
 };
 
@@ -459,7 +463,12 @@ mvc.Model.prototype.change_ = function(e) {
     }, this);
 };
 
-
+mvc.Model.prototype.bindUnload = function(fn, opt_handler) {
+    fn = goog.bind(fn, (opt_handler || this));
+    var uid = goog.getUid(fn);
+    this.onUnload_.push(fn);
+    return uid;
+};
 
 /**
  * Allows easy binding of a model's attribute to an element or a function.
@@ -494,7 +503,10 @@ mvc.Model.prototype.bind = function(name, fn, opt_handler) {
 mvc.Model.prototype.unbind = function(id) {
     return goog.array.removeIf(this.bound_, function(bound) {
         return (bound.id == id);
-    }) || goog.object.remove(this.boundAll_, id);
+    }) || goog.object.remove(this.boundAll_, id) || 
+    goog.array.removeIf(this.onUnload_, function(fn) {
+        return goog.getUid(fn) == id;
+    });
 };
 
 /**

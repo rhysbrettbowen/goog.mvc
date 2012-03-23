@@ -171,21 +171,28 @@ This can be used as a factory and cache for models. Use the get to retrieve mode
 
 ## mvc.Control ##
 
-the closure library already provides goog.ui.Component which is a great controller. If you use Backbone.js you'll probably recognise it as the view. mvc.Control adds in two methods, delegateEvents and getEls. These are convenience functions. The getEls allows you to use simple string selectors to get a handle for the elements under the component and delegateEvents gives an easier interface for listening to events in the component. If you want to use a different class in the library that already extends goog.ui.Component you can stil use these functions by adding them to your classes prototype like so:
+the closure library already provides goog.ui.Component which is a great controller. If you use Backbone.js you'll probably recognise it as the view. mvc.Control adds in two methods, delegateEvents and getEls. These are convenience functions. The getEls allows you to use simple string selectors to get a handle for the elements under the component and delegateEvents gives an easier interface for listening to events in the component. If you want to use a different class in the library that already extends goog.ui.Component you can still use these functions by adding them to your classes prototype like so:
 
 ```javascript
 goog.require('mvc.Control');
 
-myClass.prototype.delegateEvents = mvc.Control.prototype.delegateEvents;
-myClass.prototype.getEls = mvc.Control.prototype.getEls;
+// your class and protoype declarations go here
+// you will also want to make sure that you set the model for the component
+// preferably in the constructor with:
+// this.setModel(model);
+
+goog.object.extend(myClass.prototype, mvc.Control.prototype);
 ```
 
-There is also a set of functions under mvc.Control.Fn that can be passed to mvc.Model.bind for frequently used setters (changing textContent, value and classes so far - feel free to extend it with more commonly used functions)
+to delegate events use the "on" method which takes the event name, function to run, an optional className or array of classnames to check the event target against, an optional handler for the function and an optional priority. The priority could be important if you want to use Event.stopPropagation as the control will run the functions by their priority and then in the order they are registered, rather than their position in the DOM. This give you fine grain control over when to run things. There is also a click method which puts in the click event name for you, and a once method which will only call the function once.
+
+Both the on and the click method pass back a uid that can be passed to "off" to stop the listener.
 
 ## mvc.Sync ##
 
 This is an interface that should have a custom implementation. Two simple implementations have been given called mvc.AjaxSync and mvc.LocalSync. The purpose of sync is to be the glue between the model and the dataStore.
 
+The AjaxSync can be used and passed an object of functions or strings (with the strings acting much like the router example below) for each of the four methods create, read, update and del. These will be used for the call.
 
 ## mvc.Router ##
 
@@ -212,10 +219,21 @@ function(id,edit,query,queryVals) {
 
 ## mvc.Mediator ##
 
-mvc.Mediator allows message passing between components. It's a singleton so you get it's reference using
+mvc.Mediator allows message passing between components. It's most useful as a singleton so you could do this:
 
 ```javascript
-var mediator = mvc.Mediator.getInstance();
+goog.require('mvc.Mediator');
+
+/**
+ * @constructor
+ * @extends {mvc.Mediator}
+ */
+myapp.Mediator=function(){};
+goog.inherits(myapp.Mediator, mvc.Mediator);
+goog.addSingletonGetter(myapp.Mediator);
+
+// you can then access the mediator anywhere in your app using:
+// mvc.Mediator.getInstance();
 ```
 
 you can then register your object with the mediator and the messages that you may pass. This allows other modules that are listening for a specific message to run some initiation, or dispose when you unregister. You can listen to messages using the on method and stop using the off method. You can even test to see if anyone is listening for a message using the isListened method
@@ -226,6 +244,7 @@ you can then register your object with the mediator and the messages that you ma
 
 - reworked bind for performance
 - schema is now an object
+- mvc.Control events can now be given a priority to order them
 - more tests
 
 #### v0.8 ####

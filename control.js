@@ -28,7 +28,6 @@ mvc.Control = function(model) {
 };
 goog.inherits(mvc.Control, goog.ui.Component);
 
-
 /**
  * Functions that can be passed to the mvc.Model.bind
  *
@@ -51,12 +50,6 @@ mvc.Control.prototype.remove = function() {
     this.dispose();
 };
 
-/**
- * should be overriden. Creates a div for the component
- */
-mvc.Control.prototype.createDom = function() {
-    //this.setElementInternal();
-};
 
 
 /**
@@ -70,6 +63,9 @@ mvc.Control.prototype.handleEvents_ = function(type, e) {
     if(!this.eventHolder_.handlers[type])
         return;
     goog.array.forEach(this.eventHolder_.handlers[type], function(handler) {
+        if(e.propagationStopped_) {
+            return;
+        }
         if(!handler.selectors.length ||
             goog.array.some(handler.selectors, function(className) {
                 return goog.dom.classes.has(/** @type {!Node} */(e.target), className);
@@ -90,8 +86,15 @@ mvc.Control.prototype.handleEvents_ = function(type, e) {
  * @param {Function} fn
  * @param {string|Array.<string>=} className
  * @param {*=} opt_handler
+ * @param {number=} opt_priority
  */
-mvc.Control.prototype.on = function(eventName, fn, className, opt_handler) {
+mvc.Control.prototype.on = function(eventName, fn, className, opt_handler, opt_priority) {
+    if(!this.eventHolder_) {
+        this.eventHolder_ = {
+            listeners: {},
+            handlers: {}
+        };
+    }
     if(!this.eventHolder_.handlers[eventName])
         this.eventHolder_.handlers[eventName] = [];
     if(!this.eventHolder_.listeners[eventName])
@@ -104,10 +107,15 @@ mvc.Control.prototype.on = function(eventName, fn, className, opt_handler) {
         selectors: (goog.isArray(className)?className:[className]),
         fn: fn,
         uid: null,
-        handler: (opt_handler || this)
+        handler: (opt_handler || this),
+        priority: (opt_priority || 50)
         };
     obj.uid = goog.getUid(obj);
-    this.eventHolder_.handlers[eventName].push(obj);
+    goog.array.insertAt(this.eventHolder_.handlers[eventName], obj, goog.array.findIndexRight(this.eventHolder_.handlers[eventName],
+        function(obj) {
+            return obj.prioty <= (opt_priority || 50);
+        }
+    )+1);
     return obj.uid;
 };
 
@@ -118,8 +126,9 @@ mvc.Control.prototype.on = function(eventName, fn, className, opt_handler) {
  * @param {Function} fn
  * @param {string|Array.<string>=} className
  * @param {*=} opt_handler
+ * @param {number=} opt_priority
  */
-mvc.Control.prototype.once = function(eventName, fn, className, opt_handler) {
+mvc.Control.prototype.once = function(eventName, fn, className, opt_handler, opt_priority) {
     var uid;
     var onceFn = function() {
         fn.apply(/** @type {Object} */(opt_handler||this), Array.prototype.slice.call(arguments));
@@ -135,9 +144,10 @@ mvc.Control.prototype.once = function(eventName, fn, className, opt_handler) {
  * @param {Function} fn
  * @param {string|Array.<string>=} className
  * @param {*=} opt_handler
+ * @param {number=} opt_priority
  */
-mvc.Control.prototype.click = function(fn, className, opt_handler) {
-    return this.on(goog.events.EventType.CLICK, fn, className, opt_handler);
+mvc.Control.prototype.click = function(fn, className, opt_handler, opt_priority) {
+    return this.on(goog.events.EventType.CLICK, fn, className, opt_handler, opt_priority);
 };
 
 /**

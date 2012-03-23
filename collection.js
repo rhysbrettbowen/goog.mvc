@@ -35,7 +35,7 @@ mvc.Collection = function(options) {
 
     /**
      * @private
-     * @type {Array.<mvc.Model>}
+     * @type {Array.<{model:mvc.Model}>}
      */
     this.models_ = [];
     /**
@@ -43,7 +43,8 @@ mvc.Collection = function(options) {
      * @type {?function(mvc.Model, mvc.Model):number}
      */
     this.comparator_ = defaults['comparator'];
-
+    this.modelChangeFns_ = [];
+    this.modelChange_ = false;
     /**
      * @private
      */
@@ -64,7 +65,8 @@ goog.inherits(mvc.Collection, mvc.Model);
  * @return {Array.<Object.<string, *>>|Array.<*>}
  */
 mvc.Collection.prototype.pluck = function(key) {
-    return goog.array.map(this.models_, function(model) {
+    return goog.array.map(this.models_, function(mod) {
+        var model = mod.model;
         if(goog.isString(key))
             return model.get(key);
         return goog.array.reduce(key, function(map, attr) {
@@ -107,14 +109,16 @@ mvc.Collection.prototype.sort = function(silent) {
     if(this.comparator_) {
         var comp = this.comparator_;
         this.models_.sort(function(a, b) {
-            var ret = comp(a, b);
+            var ret = comp(a.model, b.model);
             if(ret < 0)
                 changeOrder = true;
             return ret;
         });
+        this.modelChange_ = true;
     }
-    if(!silent && changeOrder)
+    if(!silent && changeOrder) {
         this.dispatchEvent(goog.events.EventType.CHANGE);
+    }
 };
 
 /**
@@ -132,18 +136,24 @@ mvc.Collection.prototype.add = function(model, ind, silent) {
         }, this);
         return;
     }
-    if(!goog.array.contains(this.models_, model)) {
-        goog.array.insertAt(this.models_, model, (ind || this.models_.length));
-        goog.events.listen(model, goog.events.EventType.CHANGE, this.sort,
-            false, this);
-        goog.events.listen(model, goog.events.EventType.UNLOAD, 
-            function(e){
-                goog.array.remove(this.models_, e.target);
-                this.sort();
-            }, false, this);
+    if(!goog.array.find(this.models_, function(mod) {
+        return mod.model == model;
+    })) {
+        this.modelChange_ = true;
+        var changeId = model.bindAll(this.sort, this);
+        var unloadId = model.bindUnload(function(e){
+                this.remove(model);
+            }, this);
+            
+        goog.array.insertAt(this.models_, {
+            model: model,
+            unload: unloadId,
+            change: changeId
+        }, (ind || this.models_.length));
+        
         this.sort(true);
         if(!silent)
-            this.dispatchEvent(new goog.events.Event(goog.events.EventType.CHANGE, model));
+            this.dispatchEvent(goog.events.EventType.CHANGE);
     }
     this.length = this.models_.length;
 };
@@ -174,7 +184,14 @@ mvc.Collection.prototype.remove = function(model, silent) {
         }, this);
         return;
     }
-    if(goog.array.remove(this.models_, model)) {
+    var modelObj = goog.array.find(this.models_, function(mod) {
+        return mod.model == model;
+    });
+    if(modelObj) {
+        this.modelChange_ = true;
+        model.unbind(modelObj.unload);
+        model.unbind(modelObj.change);
+        goog.array.remove(this.models_, modelObj);
         this.sort(true);
         if(!silent)
             this.dispatchEvent(goog.events.EventType.CHANGE);
@@ -201,9 +218,12 @@ mvc.Collection.prototype.getById = function(id) {
  * @return {Array.<mvc.Model>}
  */
 mvc.Collection.prototype.getModels = function(filter) {
+    var mods = goog.array.map(this.models_, function(mod) {
+        return mod.model;
+    });
     if(filter)
-        return goog.array.filter(this.models_, /** @type {Function} */(filter));
-    return this.models_.slice(0);
+        return goog.array.filter(mods, /** @type {Function} */(filter));
+    return mods;
 };
 
 /**
@@ -213,7 +233,7 @@ mvc.Collection.prototype.getModels = function(filter) {
  * @return {mvc.Model}
  */
 mvc.Collection.prototype.at = function(index) {
-    return this.models_[index<0?this.models_.length+index:index];
+    return this.models_[index<0?this.models_.length+index:index].model;
 };
 
 /**
@@ -222,7 +242,38 @@ mvc.Collection.prototype.at = function(index) {
  * @param {boolean} silent
  */
 mvc.Collection.prototype.clear = function(silent) {
-    this.models_ = [];
-    if(!silent)
+    //this.models_ = [];
+    this.remove(this.getModels(), true);
+    this.modelChange_ = true;
+    if(!silent) {
         this.dispatchEvent(goog.events.EventType.CHANGE);
+    }
+};
+
+mvc.Collection.prototype.modelChange = function(fn, opt_handler) {
+    this.modelChangeFns_.push(goog.bind(fn, (opt_handler || this)));
+};
+
+mvc.Collection.prototype.change_ = function(e) {
+    goog.base(this, 'change_', e);
+    if(this.modelChange_) {
+        goog.array.forEach(this.modelChangeFns_, function(fn) {
+            fn(this);
+        }, this);
+        if(this.schema_) {
+            goog.object.forEach(this.schema_, function(val, key) {
+                if(val.models) {
+                    goog.array.forEach(this.bound_, function(bind) {
+                        if(goog.array.contains(bind.attr, key)) {
+                            bind.fn.apply(bind.hn, goog.array.concat(goog.array.map(bind.attr,
+                                function(attr) {
+                                    return this.get(attr);
+                                }, this)));
+                        }
+                    }, this);
+                }
+            }, this);
+        }
+        this.modelChange_ = false;
+    }
 };
