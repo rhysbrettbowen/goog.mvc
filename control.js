@@ -111,9 +111,10 @@ mvc.Control.prototype.on = function(eventName, fn, className, opt_handler, opt_p
         priority: (opt_priority || 50)
         };
     obj.uid = goog.getUid(obj);
-    goog.array.insertAt(this.eventHolder_.handlers[eventName], obj, goog.array.findIndexRight(this.eventHolder_.handlers[eventName],
+    goog.array.insertAt(this.eventHolder_.handlers[eventName], obj,
+        goog.array.findIndexRight(this.eventHolder_.handlers[eventName],
         function(obj) {
-            return obj.prioty <= (opt_priority || 50);
+            return obj.priority <= (opt_priority || 50);
         }
     )+1);
     return obj.uid;
@@ -172,12 +173,15 @@ mvc.Control.prototype.off = function(uid) {
  */
 mvc.Control.prototype.getEls = function(selector) {
     if(selector.charAt(0) == '.') {
-        return goog.dom.getElementsByClass(selector.substring(1), /** @type {Element} */(this.getElement())) || [];
+        return goog.dom.getElementsByClass(selector.substring(1),
+        /** @type {Element} */(this.getElement())) || [];
     }
     if(selector.charAt(0) == '#') {
         return [goog.dom.getElement(selector)];
     }
-    return goog.dom.getElementsByTagNameAndClass(selector.replace(/\s.*/,''), selector.replace(/.*\./,'')||null, /** @type {Element} */(this.getElement()));
+    return goog.dom.getElementsByTagNameAndClass(selector.replace(/\s.*/,''),
+        selector.replace(/.*\./,'')||null,
+        /** @type {Element} */(this.getElement()));
 };
 
 

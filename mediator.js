@@ -78,23 +78,24 @@ mvc.Mediator.prototype.unregister = function(obj, opt_messages) {
  * off to remove the listener
  *
  * @param {string|Array.<string>} message
- * @param {Object|Function} handler
+ * @param {Function} fn
+ * @param {Object=} opt_handler
  */
-mvc.Mediator.prototype.on = function(message, handler) {
+mvc.Mediator.prototype.on = function(message, fn, opt_handler) {
     if(goog.isArrayLike(message)) {
         goog.array.forEach(/** @type {Array} */(message), function(mess) {
-            this.on(mess, handler);
+            this.on(mess, fn, opt_handler);
         }, this);
         return null;
     }
     this.listeners_[message] = this.listeners_[message] || [];
     if(!this.listeners_[message].length) {
-        if(handler.init && this.available_[message]) {
-            handler.init(this.available_[message][0]);
+        if(fn.init && this.available_[message]) {
+            fn.init(this.available_[message][0]);
         }
     }
-    goog.array.insert(this.listeners_[message], handler);
-    return goog.getUid(handler);
+    goog.array.insert(this.listeners_[message], goog.bind(fn, opt_handler||this));
+    return goog.getUid(fn);
 };
 
 /**

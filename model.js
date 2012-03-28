@@ -176,18 +176,22 @@ mvc.Model.prototype.reset = function(silent) {
  * gets the value for an attribute
  *
  * @param {string} key
+ * @param {*=} opt_default will return if value is undefined
  * @return {*}
  */
-mvc.Model.prototype.get = function(key) {
+mvc.Model.prototype.get = function(key, opt_default) {
     if(this.schema_[key] && this.schema_[key].get) {
-        return this.schema_[key].get.apply(this, goog.array.map(
+        var get = this.schema_[key].get.apply(this, goog.array.map(
             this.schema_[key].require || [], function(requireKey) {
-                if(requireKey === key)
+                if(requireKey === key) {
                     return this.attr_[key];
-                return this.get(requireKey);
+                }
+                var get = this.get(requireKey);
+                return goog.isDef(get)?get:opt_default;
             },this));
+        return goog.isDef(get)?get:opt_default;
     }
-    return this.attr_[key];
+    return goog.isDef(this.attr_[key])?this.attr_[key]:opt_default;
 };
 
 /**
@@ -249,7 +253,7 @@ mvc.Model.prototype.set = function(key, val, silent) {
         } else {
             try {
                 if(this.schema_[key] && this.schema_[key].set)
-                    this.attr_[key] = this.parseSchemaFn_(this.schema_[key].set)(val, this);
+                    this.attr_[key] = goog.bind(this.parseSchemaFn_(this.schema_[key].set), this)(val, this);
                 else
                     this.attr_[key] = val;
                 success = true;
@@ -346,6 +350,11 @@ mvc.Model.prototype.meta = function(attr, require, fn) {
     this.schema_[attr].require = require;
 };
 
+mvc.Model.prototype.setter = function(attr, fn) {
+    this.schema_[attr] = this.schema_[attr] || {};
+    this.schema_[attr].set = goog.bind(fn, this);
+};
+
 /**
  * returns object of changed attributes and their values
  */
@@ -383,7 +392,7 @@ mvc.Model.prototype.getChanges = function() {
  */
 mvc.Model.prototype.revert = function(silent) {
     var newAttr = {};
-    goog.object.extend(newAttr, goog.object.map(this.ext_, function(val) {
+    goog.object.extend(newAttr, goog.object.map(this.prev_, function(val) {
         return {val: val, prev: null};
     }));
     goog.object.forEach(this.attr_, function(val, key) {
@@ -396,8 +405,12 @@ mvc.Model.prototype.revert = function(silent) {
     return this;
 };
 
-mvc.Model.prototype.dispose = function() {
-    this.sync_.del(this);
+/**
+ * @param {boolean=} opt_sync
+ */
+mvc.Model.prototype.dispose = function(opt_sync) {
+    if(opt_sync)
+        this.sync_.del(this);
     this.dispatchEvent(goog.events.EventType.UNLOAD);
     goog.array.forEach(this.onUnload_, function(fn) {
         fn(this);
@@ -412,22 +425,7 @@ mvc.Model.prototype.dispose = function() {
  * @param {boolean=} silent
  */
 mvc.Model.prototype.fetch = function(callback, silent) {
-    var success = goog.bind(function(data, status) {
-        if(status == 200) {
-            this.ext_ = goog.object.clone(data);
-            goog.array.forEach(goog.object.getKeys(this.attr_), function(key) {
-                if(!(key in data))
-                    this.unset(key, silent);
-            }, this);
-            goog.object.forEach(data, function(val, key) {
-                this.set(key, val, silent);
-            }, this);
-        }
-        if(callback) {
-            callback(data, status, this);
-        }
-    }, this);
-    this.sync_.read(this);
+    this.sync_.read(this, callback);
 };
 
 /**

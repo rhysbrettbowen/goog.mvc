@@ -17,9 +17,9 @@ goog.require('goog.Uri.QueryData');
  * @implements {mvc.Sync}
  */
 mvc.AjaxSync = function(url) {
-    
+
     var baseFunction = function(model){return "";};
-    
+
     this.baseUrls_ = {
         create: baseFunction,
         read: baseFunction,
@@ -65,7 +65,7 @@ mvc.AjaxSync.prototype.urlifyString = function(val) {
  * @inheritDoc
  */
 mvc.AjaxSync.prototype.create = function(model, callback) {
-    
+
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.create(model),
         "POST", goog.Uri.QueryData.createFromMap(model.toJson()).toString(),
         undefined,  undefined,
@@ -87,7 +87,7 @@ mvc.AjaxSync.prototype.read = function(model, callback) {
 mvc.AjaxSync.prototype.update = function(model, callback) {
     this.xhr_.send(""+(this.sendCount_++), this.baseUrls_.update(model),
         "PUT", goog.Uri.QueryData.createFromMap(model.toJson()).toString(),
-        undefined, undefined,
+        {'Content-Type' : 'application/x-www-form-urlencoded'}, undefined,
         goog.bind(this.onUpdateComplete_, this, model, callback));
 };
 
