@@ -196,7 +196,7 @@ mvc.Collection.prototype.newModel = function(opt_options, opt_silent) {
 mvc.Collection.prototype.remove = function(model, opt_silent) {
   if (goog.isArray(model)) {
     goog.array.forEach(model, function(mod) {
-      this.remove(mod, silent);
+      this.remove(mod, opt_silent);
     }, this);
     return;
   }
