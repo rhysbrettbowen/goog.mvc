@@ -25,7 +25,7 @@ goog.require('goog.history.Html5History');
 mvc.Router = function(opt_noFragment, opt_blankPage) {
   this.history_ = goog.history.Html5History.isSupported() ?
       new goog.history.Html5History() :
-      new goog.History(opt_noFragment, opt_blankPage);
+      new goog.History((opt_blankPage && opt_noFragment), opt_blankPage);
   if (this.history_.setUseFragment)
     this.history_.setUseFragment(!opt_noFragment);
   goog.events.listen(this.history_, goog.history.EventType.NAVIGATE,
