@@ -144,7 +144,7 @@ mvc.Collection.prototype.add = function(model, opt_ind, opt_silent) {
     }, this);
   }
   if (goog.isNumber(opt_ind) && opt_ind < 0) {
-    opt_ind = this.models.length + opt_ind;
+    opt_ind = this.models_.length + opt_ind;
   }
   var insert = false;
   if (!goog.array.find(this.models_, function(mod) {

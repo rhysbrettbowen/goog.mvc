@@ -86,7 +86,7 @@ mvc.Mediator.prototype.unregister = function(obj, opt_messages) {
  * @param {Function|Object} fn to run on message or object of functions to run
  * that can include init, fn and dispose.
  * @param {Object=} opt_handler to use as 'this' for the function.
- * @return {number} the id to pass to off method.
+ * @return {?number} the id to pass to off method.
  */
 mvc.Mediator.prototype.on = function(message, fn, opt_handler) {
   if (goog.isArrayLike(message)) {
@@ -101,8 +101,11 @@ mvc.Mediator.prototype.on = function(message, fn, opt_handler) {
       fn.init(this.available_[message][0]);
     }
   }
+  if (goog.isFunction(fn)) {
+    fn = {fn: fn};
+  }
   goog.array.insert(this.listeners_[message],
-      goog.bind(fn, opt_handler || this));
+      goog.bind(fn.fn, opt_handler || this));
   return goog.getUid(fn);
 };
 
@@ -121,7 +124,7 @@ mvc.Mediator.prototype.once = function(message, handler) {
     this.off(uid);
   },this);
   uid = this.on(message, fn);
-  return uid;
+  return /** @type {number} */(uid);
 };
 
 

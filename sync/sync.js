@@ -43,38 +43,46 @@ mvc.Sync.Status = {
     GATEWAY_TIMEOUT: 504
 }*/
 
-/**
- * take in the model to push to server (use .toJson()) and call callback when done
- * pass in the json and status (use HTTP status codes) as a number
- *
- * @param {mvc.Model} model
- * @param {function(Object, number)} callback
- */
-mvc.Sync.prototype.create = function(model, callback) {};
 
 /**
- * take in the model to push to server (use .toJson()) and call callback when done
- * pass in the json and status (use HTTP status codes) as a number
+ * take in the model to push to server (use .toJson())
+ * and call callback when done
+ * pass in the json and status (use HTTP status codes) as a number.
  *
- * @param {mvc.Model} model
- * @param {function(Object, number)} callback
+ * @param {mvc.Model} model to create.
+ * @param {function(Object, number)=} opt_callback optional.
  */
-mvc.Sync.prototype.read = function(model, callback) {};
+mvc.Sync.prototype.create = function(model, opt_callback) {};
+
 
 /**
- * take in the model to push to server (use .toJson()) and call callback when done
- * pass in the json and status (use HTTP status codes) as a number
+ * take in the model to push to server (use .toJson())
+ * and call callback when done
+ * pass in the json and status (use HTTP status codes) as a number.
  *
- * @param {mvc.Model} model
- * @param {function(Object, number)} callback
+ * @param {mvc.Model} model to refresh.
+ * @param {function(Object, number)=} opt_callback optional.
  */
-mvc.Sync.prototype.update = function(model, callback) {};
+mvc.Sync.prototype.read = function(model, opt_callback) {};
+
 
 /**
- * take in the model to push to server (use .toJson()) and call callback when done
- * pass in the status (use HTTP status codes) as a number
+ * take in the model to push to server (use .toJson())
+ * and call callback when done
+ * pass in the json and status (use HTTP status codes) as a number.
  *
- * @param {mvc.Model} model
- * @param {function(number)} callback
+ * @param {mvc.Model} model to update.
+ * @param {function(Object, number)=} opt_callback optional.
  */
-mvc.Sync.prototype.del = function(model, callback) {};
+mvc.Sync.prototype.update = function(model, opt_callback) {};
+
+
+/**
+ * take in the model to push to server (use .toJson())
+ * and call callback when done
+ * pass in the status (use HTTP status codes) as a number.
+ *
+ * @param {mvc.Model} model to delete.
+ * @param {Function=} opt_callback optional.
+ */
+mvc.Sync.prototype.del = function(model, opt_callback) {};

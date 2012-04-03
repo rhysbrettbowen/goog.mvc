@@ -136,7 +136,7 @@ mvc.Model.prototype.parseSchemaFn_ = function(fn) {
             throw new Error();
     };
   }
-  return val;
+  return /** @type {Function} */(val);
 };
 
 
@@ -535,7 +535,7 @@ mvc.Model.prototype.change_ = function() {
 
 /**
  * @param {Function} fn function to run when model is disposed.
- * @param {*=} opt_handler object for 'this' of function.
+ * @param {Object=} opt_handler object for 'this' of function.
  * @return {number} id to use for unbind.
  */
 mvc.Model.prototype.bindUnload = function(fn, opt_handler) {
