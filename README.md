@@ -246,7 +246,9 @@ you can then register your object with the mediator and the messages that you ma
 - schema is now an object
 - mvc.Control events can now be given a priority to order them
 - more tests
-- router uses HTML5 where possible and you can pass in parameters to hide the fragment
+- files pass closure linter in strict mode
+- can unbind listeners on collection model change
+- getBinder reworked so can use as getter and setters
 
 #### v0.8 ####
 
