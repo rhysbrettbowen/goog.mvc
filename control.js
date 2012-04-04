@@ -1,5 +1,3 @@
-//     goog.mvc 0.9
-
 //     (c) 2012 Rhys Brett-Bowen, Catch.com
 //     goog.mvc may be freely distributed under the MIT license.
 //     For all details and documentation:
@@ -68,8 +66,10 @@ mvc.Control.prototype.handleEvents_ = function(type, e) {
     }
     if (!handler.selectors.length ||
             goog.array.some(handler.selectors, function(className) {
-          return goog.dom.classes.has(/** @type {!Node} */(e.target),
-              className);
+          return goog.isFunction(className) ?
+              className(e) :
+              goog.dom.classes.has(/** @type {!Node} */(e.target),
+                  className);
             })) {
       goog.bind(handler.fn, handler.handler)(e);
     }
@@ -85,8 +85,9 @@ mvc.Control.prototype.handleEvents_ = function(type, e) {
  *
  * @param {string} eventName the event type to listen for.
  * @param {Function} fn the function to run on the event.
- * @param {string|Array.<string>=} opt_className or names to check element
- * against to see if listener function should fire.
+ * @param {string|Array.<string>|Function=} opt_className or names to
+ * check element against to see if listener function should fire. if it is
+ * a function then it takes the event and returns true if it matches.
  * @param {*=} opt_handler object to bind 'this' to, otherwise mvc.Control.
  * @param {number=} opt_priority default is 50, lower is more important.
  * @return {number} uid to use with off method.
@@ -131,8 +132,9 @@ mvc.Control.prototype.on = function(
  *
  * @param {string} eventName the event type to listen for.
  * @param {Function} fn the function to run on the event.
- * @param {string|Array.<string>=} opt_className or names to check element
- * against to see if listener function should fire.
+ * @param {string|Array.<string>|Function=} opt_className or names to
+ * check element against to see if listener function should fire.if it is
+ * a function then it takes the event and returns true if it matches.
  * @param {*=} opt_handler object to bind 'this' to, otherwise mvc.Control.
  * @param {number=} opt_priority default is 50, lower is more important.
  * @return {number} uid to use with off method.
@@ -154,8 +156,9 @@ mvc.Control.prototype.once = function(
  * same as on but assumes the event type is a click
  *
  * @param {Function} fn the function to run on the event.
- * @param {string|Array.<string>=} opt_className or names to check element
- * against to see if listener function should fire.
+ * @param {string|Array.<string>|Function=} opt_className or names to
+ * check element against to see if listener function should fire. if it is
+ * a function then it takes the event and returns true if it matches.
  * @param {*=} opt_handler object to bind 'this' to, otherwise mvc.Control.
  * @param {number=} opt_priority default is 50, lower is more important.
  * @return {number} uid to use with off method.
@@ -168,7 +171,7 @@ mvc.Control.prototype.click = function(
 
 
 /**
- * take off a lister by it's id'
+ * take off a lister by it's id
  *
  * @param {string} uid of event listener to turn off.
  */
